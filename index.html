@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>আল আকসা খেজুর শপ - হিসাব ট্র্যাকার</title>
+    <style>
+        :root {
+            --primary: #0d9488;
+            --primary-dark: #0f766e;
+            --primary-gradient: linear-gradient(135deg, #0d9488 0%, #0f172a 100%);
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
+        
+        body { 
+            background-color: var(--bg-body);
+            color: var(--text-main); 
+            padding: 12px 10px; 
+            min-height: 100vh;
+        }
+        
+        .app-container { 
+            max-width: 440px; 
+            margin: 0 auto; 
+            background: var(--card-bg); 
+            border-radius: 20px; 
+            padding: 16px; 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+        
+        /* Header */
+        .header { 
+            text-align: center; 
+            font-size: 18px; 
+            font-weight: 800; 
+            color: #ffffff; 
+            background: var(--primary-gradient);
+            padding: 12px 16px;
+            border-radius: 14px;
+            margin-bottom: 12px; 
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+        }
+        
+        /* Month Navigation */
+        .month-nav { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #f1f5f9; 
+            padding: 6px 8px; 
+            border-radius: 10px; 
+            margin-bottom: 12px; 
+            border: 1px solid var(--border-color);
+        }
+        .month-btn { 
+            background: #ffffff; 
+            color: var(--primary-dark); 
+            border: 1px solid #cbd5e1; 
+            padding: 5px 10px; 
+            border-radius: 6px; 
+            font-weight: 700; 
+            font-size: 11.5px;
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .month-btn:active { background: var(--primary); color: #fff; }
+        .month-title { font-size: 13.5px; font-weight: 800; color: var(--primary-dark); }
+        
+        .note-box { 
+            background: #fffbeb; 
+            border-left: 3px solid var(--warning); 
+            padding: 8px 10px; 
+            font-size: 11.5px; 
+            border-radius: 6px; 
+            margin-bottom: 12px; 
+            color: #b45309; 
+            font-weight: 600; 
+        }
+
+        /* Summary Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+        .stat-card { 
+            background: #f8fafc; 
+            border: 1px solid var(--border-color); 
+            padding: 8px 10px; 
+            border-radius: 10px; 
+            text-align: center; 
+        }
+        .stat-card.total { 
+            grid-column: span 2; 
+            background: #ecfdf5; 
+            border-color: #a7f3d0; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+        }
+        .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+        .stat-val { font-size: 14.5px; font-weight: 800; color: var(--text-main); margin-top: 2px; }
+        .stat-card.total .stat-val { margin-top: 0; font-size: 17px; color: #047857; }
+
+        /* Date Slider Section */
+        .date-section { margin-bottom: 12px; }
+        .section-label { font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 6px; display: block; }
+        
+        .date-slider { 
+            display: flex; 
+            gap: 6px; 
+            overflow-x: auto; 
+            padding: 4px 0 8px 0; 
+            scroll-behavior: smooth; 
+        }
+        .date-slider::-webkit-scrollbar { height: 4px; }
+        .date-slider::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .date-pill { 
+            flex: 0 0 auto; 
+            padding: 6px 12px; 
+            background: #f8fafc; 
+            border-radius: 10px; 
+            font-size: 11.5px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            border: 1px solid var(--border-color); 
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .date-pill.active { 
+            background: var(--primary); 
+            color: white; 
+            border-color: var(--primary); 
+            box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+        }
+
+        /* Status Buttons Row */
+        .status-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+        .status-btn { 
+            padding: 7px 2px; 
+            border: 1px solid var(--border-color); 
+            background: #f8fafc; 
+            border-radius: 8px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            text-align: center; 
+            font-size: 11px; 
+            color: #64748b;
+            transition: all 0.2s; 
+        }
+        .status-btn.active-p { background: var(--success); color: white; border-color: var(--success); }
+        .status-btn.active-a { background: var(--danger); color: white; border-color: var(--danger); }
+        .status-btn.active-h { background: var(--warning); color: white; border-color: var(--warning); }
+        .status-btn.active-n { background: #64748b; color: white; border-color: #64748b; }
+
+        /* Dual Inputs */
+        .dual-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        
+        .form-group { margin-bottom: 8px; }
+        input[type="number"], input[type="text"] { 
+            width: 100%; 
+            padding: 8px 10px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            font-size: 12.5px; 
+            outline: none; 
+            background: #f8fafc; 
+        }
+        input:focus { border-color: var(--primary); background: #ffffff; }
+
+        .save-btn { 
+            width: 100%; 
+            background: var(--primary-gradient); 
+            color: white; 
+            border: none; 
+            padding: 11px; 
+            font-size: 14px; 
+            font-weight: 700; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: opacity 0.2s;
+            box-shadow: 0 4px 10px rgba(13, 148, 136, 0.25);
+        }
+        .save-btn:active { opacity: 0.9; }
+        
+        /* History & Controls Row */
+        .history-sec { margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px; }
+        .history-title { font-size: 12.5px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+        
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .filter-container {
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        .filter-pill {
+            padding: 5px 8px;
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .filter-pill.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+        }
+
+        .search-compact {
+            flex: 1;
+            min-width: 85px;
+            padding: 5px 8px !important;
+            font-size: 11px !important;
+            border-radius: 8px !important;
+            border: 1px solid var(--border-color) !important;
+            background: #ffffff !important;
+        }
+
+        .history-list { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        .history-card { 
+            background: #f8fafc; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            padding: 8px 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            cursor: pointer; 
+        }
+        .history-card:hover { background: #f1f5f9; }
+        .card-left { display: flex; flex-direction: column; gap: 1px; }
+        .card-date { font-weight: 700; font-size: 11.5px; color: var(--text-main); }
+        .card-status { font-size: 10.5px; font-weight: 700; }
+        .card-right { text-align: right; }
+        .card-amount { font-weight: 800; font-size: 12.5px; color: #047857; }
+        .card-sub { font-size: 10px; color: var(--text-muted); }
+        .card-note { font-size: 10px; color: #d97706; font-style: italic; }
+
+        /* Toast Popup */
+        .toast {
+            visibility: hidden;
+            min-width: 180px;
+            background-color: var(--primary-dark);
+            color: #fff;
+            text-align: center;
+            border-radius: 20px;
+            padding: 8px 14px;
+            position: fixed;
+            z-index: 999;
+            left: 50%;
+            bottom: 25px;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        .toast.show { visibility: visible; opacity: 1; bottom: 35px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">আল আকসা খেজুর শপ</div>
+    
+    <!-- Month Navigation -->
+    <div class="month-nav">
+        <button class="month-btn" onclick="changeMonth(-1)">◀ গত মাস</button>
+        <div class="month-title" id="monthDisplay">--</div>
+        <button class="month-btn" onclick="changeMonth(1)">পরের মাস ▶</button>
+    </div>
+
+    <div class="note-box">📌 ৬ আগস্ট থেকে আল আকসা খেজুর শপে কাজ শুরু হয়েছে।</div>
+
+    <!-- Summary Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">উপস্থিত</div>
+            <div class="stat-val" id="totalPresent">০ দিন</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">অনুপস্থিত</div>
+            <div class="stat-val" id="totalAbsent">০ দিন</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">মোট দৈনিক</div>
+            <div class="stat-val" id="totalDaily">৳ ০</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">মোট নগদ</div>
+            <div class="stat-val" id="totalCash">৳ ০</div>
+        </div>
+        <div class="stat-card total">
+            <div class="stat-label">সর্বমোট পাওনা:</div>
+            <div class="stat-val" id="grandTotal">৳ ০</div>
+        </div>
+    </div>
+
+    <!-- Date Slider -->
+    <div class="date-section">
+        <span class="section-label">তারিখ নির্বাচন করুন:</span>
+        <div class="date-slider" id="dateSlider"></div>
+    </div>
+
+    <!-- Attendance Status Buttons -->
+    <span class="section-label">হাজিরা স্ট্যাটাস:</span>
+    <div class="status-btns">
+        <div class="status-btn" id="btnP" onclick="setStatus('PRESENT')">🟢 উপস্থিত</div>
+        <div class="status-btn" id="btnA" onclick="setStatus('ABSENT')">🔴 অনুপস্থিত</div>
+        <div class="status-btn" id="btnH" onclick="setStatus('HOLIDAY')">🟡 ছুটি</div>
+        <div class="status-btn" id="btnN" onclick="setStatus('NEI')">⚪ নেই</div>
+    </div>
+
+    <!-- Horizontal Money Inputs -->
+    <div class="dual-inputs">
+        <div>
+            <span class="section-label">দৈনিক মজুরি (৳):</span>
+            <input type="number" id="dailyInput" value="200" placeholder="২০০">
+        </div>
+        <div>
+            <span class="section-label">নগদ গ্রহণ (৳):</span>
+            <input type="number" id="cashInput" placeholder="০">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <span class="section-label">বিশেষ নোট (ঐচ্ছিক):</span>
+        <input type="text" id="noteInput" placeholder="অ্যাডভান্স জমা / অতিরিক্ত বিবরণ...">
+    </div>
+
+    <button class="save-btn" onclick="saveData()">হিসাব সেভ করুন</button>
+
+    <!-- History & Controls Row -->
+    <div class="history-sec">
+        <div class="history-title">চলতি মাসের লেনদেন হিস্ট্রি:</div>
+        
+        <div class="controls-row">
+            <div class="filter-container">
+                <div class="filter-pill active" id="f-ALL" onclick="setFilter('ALL')">সব</div>
+                <div class="filter-pill" id="f-PRESENT" onclick="setFilter('PRESENT')">🟢</div>
+                <div class="filter-pill" id="f-ABSENT" onclick="setFilter('ABSENT')">🔴</div>
+                <div class="filter-pill" id="f-CASH" onclick="setFilter('CASH')">💵 নগদ</div>
+            </div>
+            
+            <input type="text" id="searchInput" class="search-compact" placeholder="🔍 তারিখ (যেমন: ৫ বা 05)" oninput="renderHistory()">
+        </div>
+        
+        <div class="history-list" id="historyList"></div>
+    </div>
+</div>
+
+<div id="toast" class="toast">হিসাব সফলভাবে সেভ হয়েছে!</div>
+
+<script>
+    let today = new Date();
+    let currentViewDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    let selectedDateStr = formatDate(today);
+    let currentStatus = 'PRESENT'; 
+    let currentFilter = 'ALL';
+    let storeData = JSON.parse(localStorage.getItem('shopTrackerData')) || {};
+
+    const banglaMonths = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+
+    function toBanglaNum(num) {
+        if (num === undefined || num === null || num === '') return '০';
+        const bnNums = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        return num.toString().replace(/\d/g, d => bnNums[d]);
+    }
+
+    function toEnglishNum(str) {
+        if (!str) return '';
+        const bnNums = {'০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9'};
+        return str.replace(/[০-৯]/g, d => bnNums[d]);
+    }
+
+    function formatDate(d) {
+        let year = d.getFullYear();
+        let month = String(d.getMonth() + 1).padStart(2, '0');
+        let day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function updateMonthHeader() {
+        const m = banglaMonths[currentViewDate.getMonth()];
+        const y = toBanglaNum(currentViewDate.getFullYear());
+        document.getElementById('monthDisplay').innerText = `${m} ${y}`;
+        renderDateSlider();
+        updateDashboard();
+    }
+
+    function changeMonth(offset) {
+        currentViewDate.setMonth(currentViewDate.getMonth() + offset);
+        updateMonthHeader();
+    }
+
+    function renderDateSlider() {
+        const slider = document.getElementById('dateSlider');
+        slider.innerHTML = '';
+        const year = currentViewDate.getFullYear();
+        const month = currentViewDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let activePillEl = null;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const pill = document.createElement('div');
+            const isActive = (selectedDateStr === dateStr);
+            
+            pill.className = 'date-pill' + (isActive ? ' active' : '');
+            pill.innerText = `${toBanglaNum(d)} তারিখ`;
+            pill.onclick = () => selectDate(dateStr, pill);
+            
+            slider.appendChild(pill);
+
+            if (isActive) {
+                activePillEl = pill;
+            }
+        }
+
+        // আজকের/সিলেক্টেড তারিখের বাটনটি মাঝখানে স্ক্রোল করার লজিক
+        if (activePillEl) {
+            setTimeout(() => {
+                activePillEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }, 100);
+        }
+    }
+
+    function selectDate(dateStr, element) {
+        selectedDateStr = dateStr;
+        renderDateSlider();
+        loadDateData();
+    }
+
+    function setStatus(status) {
+        currentStatus = status;
+        document.getElementById('btnP').className = 'status-btn' + (status === 'PRESENT' ? ' active-p' : '');
+        document.getElementById('btnA').className = 'status-btn' + (status === 'ABSENT' ? ' active-a' : '');
+        document.getElementById('btnH').className = 'status-btn' + (status === 'HOLIDAY' ? ' active-h' : '');
+        document.getElementById('btnN').className = 'status-btn' + (status === 'NEI' ? ' active-n' : '');
+    }
+
+    function setFilter(filterType) {
+        currentFilter = filterType;
+        document.getElementById('f-ALL').className = 'filter-pill' + (filterType === 'ALL' ? ' active' : '');
+        document.getElementById('f-PRESENT').className = 'filter-pill' + (filterType === 'PRESENT' ? ' active' : '');
+        document.getElementById('f-ABSENT').className = 'filter-pill' + (filterType === 'ABSENT' ? ' active' : '');
+        document.getElementById('f-CASH').className = 'filter-pill' + (filterType === 'CASH' ? ' active' : '');
+        renderHistory();
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById("toast");
+        toast.innerText = msg;
+        toast.className = "toast show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2000);
+    }
+
+    function saveData() {
+        if (!selectedDateStr) return showToast('তারিখ নির্বাচন করুন!');
+
+        const daily = parseFloat(document.getElementById('dailyInput').value) || 0;
+        const cash = parseFloat(document.getElementById('cashInput').value) || 0;
+        const note = document.getElementById('noteInput').value.trim();
+
+        storeData[selectedDateStr] = { status: currentStatus, daily: daily, cash: cash, note: note };
+
+        localStorage.setItem('shopTrackerData', JSON.stringify(storeData));
+        showToast('✓ হিসাব সফলভাবে সেভ হয়েছে!');
+        updateDashboard();
+    }
+
+    function loadDateData() {
+        const data = storeData[selectedDateStr] || { status: 'PRESENT', daily: 200, cash: '', note: '' };
+        setStatus(data.status);
+        document.getElementById('dailyInput').value = (data.daily !== undefined) ? data.daily : 200;
+        document.getElementById('cashInput').value = data.cash || '';
+        document.getElementById('noteInput').value = data.note || '';
+    }
+
+    function renderHistory() {
+        const historyContainer = document.getElementById('historyList');
+        historyContainer.innerHTML = '';
+        
+        let rawSearch = document.getElementById('searchInput').value.trim();
+        let searchEng = toEnglishNum(rawSearch);
+        let cleanSearch = searchEng.replace(/^0+/, '');
+
+        const currentYearMonth = `${currentViewDate.getFullYear()}-${String(currentViewDate.getMonth() + 1).padStart(2, '0')}`;
+
+        Object.keys(storeData).sort().reverse().forEach(date => {
+            if (date.startsWith(currentYearMonth)) {
+                const dayPart = date.split('-')[2]; 
+                const cleanDayPart = dayPart.replace(/^0+/, '');
+
+                const matchesSearch = !cleanSearch || dayPart.includes(searchEng) || cleanDayPart === cleanSearch;
+
+                if (matchesSearch) {
+                    const item = storeData[date];
+
+                    if (currentFilter === 'PRESENT' && item.status !== 'PRESENT') return;
+                    if (currentFilter === 'ABSENT' && item.status !== 'ABSENT') return;
+                    if (currentFilter === 'CASH' && (!item.cash || item.cash <= 0)) return;
+
+                    const total = (item.daily || 0) + (item.cash || 0);
+                    
+                    let badgeClass = '#64748b';
+                    let badgeText = '⚪ নেই';
+                    if(item.status === 'PRESENT') { badgeClass = '#10b981'; badgeText = '🟢 উপস্থিত'; }
+                    if(item.status === 'ABSENT') { badgeClass = '#ef4444'; badgeText = '🔴 অনুপস্থিত'; }
+                    if(item.status === 'HOLIDAY') { badgeClass = '#f59e0b'; badgeText = '🟡 ছুটি'; }
+
+                    const noteHtml = item.note ? `<div class="card-note">📝 ${item.note}</div>` : '';
+
+                    const parts = date.split('-');
+                    const bnFormattedDate = `${toBanglaNum(parts[2])}-${toBanglaNum(parts[1])}-${toBanglaNum(parts[0])}`;
+
+                    const card = document.createElement('div');
+                    card.className = 'history-card';
+                    card.innerHTML = `
+                        <div class="card-left">
+                            <div class="card-date">${bnFormattedDate}</div>
+                            <div class="card-status" style="color: ${badgeClass};">${badgeText}</div>
+                            ${noteHtml}
+                        </div>
+                        <div class="card-right">
+                            <div class="card-amount">৳ ${toBanglaNum(total)}</div>
+                            <div class="card-sub">দৈনিক: ৳${toBanglaNum(item.daily || 0)} | নগদ: ৳${toBanglaNum(item.cash || 0)}</div>
+                        </div>
+                    `;
+                    card.onclick = () => selectDate(date);
+                    historyContainer.appendChild(card);
+                }
+            }
+        });
+    }
+
+    function updateDashboard() {
+        let present = 0, absent = 0, totalDaily = 0, totalCash = 0;
+        const currentYearMonth = `${currentViewDate.getFullYear()}-${String(currentViewDate.getMonth() + 1).padStart(2, '0')}`;
+
+        Object.keys(storeData).forEach(date => {
+            if (date.startsWith(currentYearMonth)) {
+                const item = storeData[date];
+                if (item.status === 'PRESENT') present++;
+                if (item.status === 'ABSENT') absent++;
+                totalDaily += (item.daily || 0);
+                totalCash += (item.cash || 0);
+            }
+        });
+
+        document.getElementById('totalPresent').innerText = toBanglaNum(present) + ' দিন';
+        document.getElementById('totalAbsent').innerText = toBanglaNum(absent) + ' দিন';
+        document.getElementById('totalDaily').innerText = '৳ ' + toBanglaNum(totalDaily);
+        document.getElementById('totalCash').innerText = '৳ ' + toBanglaNum(totalCash);
+        document.getElementById('grandTotal').innerText = '৳ ' + toBanglaNum(totalDaily + totalCash);
+
+        renderHistory();
+    }
+
+    updateMonthHeader();
+    loadDateData();
+</script>
+
+</body>
+  </html>
