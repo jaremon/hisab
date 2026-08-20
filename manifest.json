@@ -1,16 +1,16 @@
 {
-  "short_name": "হিসাব শপ",
-  "name": "আল আকসা খেজুর শপ",
+  "short_name": "আমার হিসাব",
+  "name": "আল আকসা খেজুর শপ - আমার হিসাব",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/7094/7094584.png",
-      "type": "image/png",
+      "src": "https://i.ibb.co/C31cQnQ5/1000017853.jpg",
+      "type": "image/jpeg",
       "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
   "start_url": "./index.html",
-  "background_color": "#0d9488",
-  "theme_color": "#0d9488",
+  "background_color": "#2563eb",
+  "theme_color": "#2563eb",
   "display": "standalone"
 }
