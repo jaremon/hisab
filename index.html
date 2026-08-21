@@ -325,32 +325,48 @@
         .qr-option-btn.camera { background: #0f766e; color: #fff; }
         .qr-option-btn.gallery { background: #1e293b; color: #fff; }
 
-        /* Employee list card */
+        /* Employee list card - redesigned */
         .emp-list-card {
-            background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px;
-            padding: 12px; cursor: pointer; margin-bottom: 10px;
-            display: flex; flex-direction: column; gap: 10px;
+            background: #f8fafc; border: 1px solid var(--border-color); border-radius: 14px;
+            padding: 14px; cursor: pointer; margin-bottom: 12px;
+            display: flex; flex-direction: column; gap: 12px;
         }
         .emp-list-card:hover { background: #f1f5f9; }
-        .emp-list-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-        .emp-list-left { flex: 1; min-width: 0; }
-        .emp-list-name { font-weight: 800; font-size: 14px; color: var(--text-main); }
-        .emp-list-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
-        .emp-list-salary { font-size: 13px; font-weight: 700; color: #10b981; margin-top: 5px; }
-        .emp-id-label {
-            display: inline-block; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
-            padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap;
+        .emp-list-top {
+            display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
         }
+        .emp-list-left { flex: 1; min-width: 0; }
+        .emp-list-right {
+            display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+        }
+        .emp-list-photo {
+            width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+            border: 2.5px solid var(--primary); background: #e2e8f0;
+        }
+        .emp-list-name-under {
+            font-weight: 800; font-size: 12px; color: var(--text-main);
+            margin-top: 6px; text-align: center; max-width: 80px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .emp-list-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+        .emp-list-meta b { color: var(--text-main); font-weight: 700; }
+        .emp-id-label {
+            display: inline-block; background: #ecfdf5; color: #0f766e; border: 1px solid #a7f3d0;
+            padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; margin-bottom: 6px;
+        }
+        .emp-list-salary { font-size: 14px; font-weight: 800; color: #10b981; margin-top: 6px; }
         .emp-action-btns {
-            display: flex; gap: 8px; width: 100%; position: relative; z-index: 2;
+            display: flex; gap: 8px; width: 100%; position: relative; z-index: 5;
             border-top: 1px solid #e2e8f0; padding-top: 10px;
         }
         .emp-action-btns button {
             flex: 1; padding: 9px 6px; font-size: 12px; border-radius: 8px; cursor: pointer;
             border: 1px solid #cbd5e1; background: #ffffff; font-weight: 700;
+            -webkit-tap-highlight-color: transparent;
         }
         .emp-action-btns .qr-btn { background: #ecfdf5; color: #0f766e; border-color: #a7f3d0; }
         .emp-action-btns .del-btn { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+        .emp-action-btns button:active { transform: scale(0.96); opacity: 0.9; }
     </style>
 </head>
 <body>
@@ -649,6 +665,7 @@
 <!-- Employee Detail Modal -->
 <div id="empDetailModal" class="modal-overlay">
     <div class="modal-card" style="max-width: 360px;">
+        <img id="mEmpPhoto" src="" alt="photo" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);margin:0 auto 10px auto;display:none;background:#e2e8f0;">
         <div class="modal-title" id="mEmpName" style="color: var(--primary-dark);">এমপ্লয়ির নাম</div>
         <div style="font-size:12px; color:var(--text-muted);" id="mEmpRole">পদবী</div>
         <div style="font-size:13px; font-weight:800; color:var(--primary); margin-top:4px;" id="mEmpId">ID: EMP-000</div>
@@ -1169,6 +1186,10 @@
             if (idx >= 0) {
                 employeesList[idx].name = newName || employeesList[idx].name;
                 employeesList[idx].phone = newPhone || employeesList[idx].phone;
+                // ছবিও সেভ করি যাতে CEO দেখতে পায়
+                if (userProfile.pic) {
+                    employeesList[idx].pic = userProfile.pic;
+                }
                 localStorage.setItem('shopEmployeesList', JSON.stringify(employeesList));
             }
         }
@@ -1192,18 +1213,23 @@
             if (!filter || (emp.name || '').toLowerCase().includes(filter) || emp.id.toLowerCase().includes(filter)) {
                 const displayName = emp.name || 'নাম সেট হয়নি';
                 const hasRequest = pendingQrResets.indexOf(emp.id) >= 0;
+                const photoSrc = emp.pic || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+
                 const card = document.createElement('div');
                 card.className = 'emp-list-card';
                 card.innerHTML = `
                     <div class="emp-list-top">
                         <div class="emp-list-left">
-                            <div class="emp-list-name">👤 ${displayName}</div>
-                            <div class="emp-list-meta">💼 ${emp.role || 'কর্মচারী'}</div>
-                            ${emp.phone ? '<div class="emp-list-meta">📞 ' + emp.phone + '</div>' : ''}
-                            ${emp.startDate ? '<div class="emp-list-meta">📅 ' + formatBanglaFullDate(emp.startDate) + '</div>' : ''}
+                            <div class="emp-id-label">🆔 ${emp.id}</div>
+                            <div class="emp-list-meta">💼 <b>${emp.role || 'কর্মচারী'}</b></div>
+                            ${emp.startDate ? '<div class="emp-list-meta">📅 জয়েনিং: ' + formatBanglaFullDate(emp.startDate) + '</div>' : ''}
                             <div class="emp-list-salary">৳ ${toBanglaNum(emp.salary || 0)}</div>
+                            ${emp.phone ? '<div class="emp-list-meta">📞 ' + emp.phone + '</div>' : ''}
                         </div>
-                        <div class="emp-id-label">🆔 ${emp.id}</div>
+                        <div class="emp-list-right">
+                            <img class="emp-list-photo" src="${photoSrc}" alt="photo">
+                            <div class="emp-list-name-under">${displayName}</div>
+                        </div>
                     </div>
                     <div class="emp-action-btns">
                         <button type="button" class="qr-btn" data-action="qr">${hasRequest ? '📨 রিকোয়েস্ট' : '📱 QR'}</button>
@@ -1211,13 +1237,15 @@
                         <button type="button" class="del-btn" data-action="del">🗑️ ডিলিট</button>
                     </div>
                 `;
+
                 if (hasRequest) {
                     const qb = card.querySelector('[data-action="qr"]');
                     qb.style.background = '#fef3c7';
                     qb.style.color = '#b45309';
                     qb.style.borderColor = '#fde68a';
                 }
-                // বাটন — কার্ড ডিটেইল খুলবে না
+
+                // বাটন ইভেন্ট — বাবলিং বন্ধ
                 card.querySelector('[data-action="qr"]').addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1234,10 +1262,13 @@
                     e.stopPropagation();
                     openDeleteConfirm(index);
                 });
+
+                // কার্ড ক্লিক → ডিটেইল (বাটন ছাড়া)
                 card.addEventListener('click', function(e) {
                     if (e.target.closest('.emp-action-btns')) return;
                     showEmployeeDetail(emp);
                 });
+
                 container.appendChild(card);
             }
         });
@@ -1279,6 +1310,11 @@
         document.getElementById('empFormTitle').innerText = '✏️ এমপ্লয়ির তথ্য সংশোধন';
         document.getElementById('cancelEditBtn').style.display = 'block';
         updateAutoIdPreview();
+        // ফর্ম উপরে স্ক্রল
+        const formCard = document.getElementById('tab4AddEmpCard');
+        if (formCard) {
+            formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     function openDeleteConfirm(index) {
@@ -1320,6 +1356,13 @@
         document.getElementById('mEmpPhone').innerText = emp.phone || 'N/A';
         document.getElementById('mEmpJoinDate').innerText = emp.startDate ? formatBanglaFullDate(emp.startDate) : 'N/A';
 
+        // প্রোফাইল ছবি দেখানো
+        const detailImg = document.getElementById('mEmpPhoto');
+        if (detailImg) {
+            detailImg.src = emp.pic || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+            detailImg.style.display = 'block';
+        }
+
         const empData = allStoreData[emp.id] || {};
         const ym = getCurrentYearMonth();
         let present = 0, absent = 0, holiday = 0, totalDaily = 0, totalCash = 0;
@@ -1355,22 +1398,26 @@
     function closeEmpDetailModal() { document.getElementById('empDetailModal').style.display = 'none'; currentViewingEmp = null; }
 
     function buildEmpQrPayload(emp, reset) {
-        // শুধু ASCII — ছোট পেলোড, QR overflow হবে না
-        // ফরম্যাট: AH1|id|salary|roleEn|phone|startDate|reset
-        // নাম QR-এ রাখি না (বাংলায় সাইজ বাড়ে); স্ক্যান পর প্রোফাইলে সেট করা যাবে
+        // বাংলা রোল সাপোর্ট (AH2 + Base64) + ছোট পেলোড
         const id = String(emp.id || '').replace(/\|/g, '');
         const salary = String(Math.round(Number(emp.salary) || 0));
-        const role = String(emp.role || 'Staff').replace(/\|/g, '/').substring(0, 24);
-        // role may be Bangla - transliterate-ish: keep as is but limit length; if still long use Staff
-        const roleSafe = /^[\x00-\x7F]*$/.test(role) ? role : 'Staff';
+        let role = String(emp.role || 'Staff').replace(/\|/g, '/').substring(0, 40);
+        try {
+            role = btoa(unescape(encodeURIComponent(role))); // Unicode safe Base64
+        } catch (e) {
+            role = btoa('Staff');
+        }
         const phone = String(emp.phone || '').replace(/[^\d+]/g, '').substring(0, 15);
         const start = String(emp.startDate || '').substring(0, 10);
         const flag = reset ? '1' : '0';
-        return ['AH1', id, salary, roleSafe, phone, start, flag].join('|');
+        // নতুন ফরম্যাট: AH2|id|salary|roleB64|phone|start|reset
+        return ['AH2', id, salary, role, phone, start, flag].join('|');
     }
     function parseEmpQrPayload(code) {
         if (!code) return null;
         code = String(code).trim();
+
+        // JSON format (legacy)
         if (code.startsWith('{')) {
             try {
                 const p = JSON.parse(code);
@@ -1389,9 +1436,33 @@
             } catch (e) {}
             return null;
         }
+
+        // New AH2 format (Bengali role via Base64)
+        if (code.startsWith('AH2|')) {
+            const p = code.split('|');
+            if (p.length >= 3) {
+                let role = p[3] || '';
+                try {
+                    role = decodeURIComponent(escape(atob(role)));
+                } catch (e) {
+                    role = role || 'Staff';
+                }
+                return {
+                    type: 'emp_setup',
+                    id: p[1] || '',
+                    name: '',
+                    salary: parseFloat(p[2]) || 0,
+                    role: role,
+                    phone: p[4] || '',
+                    startDate: p[5] || '',
+                    reset: (p[6] || '0') === '1'
+                };
+            }
+        }
+
+        // Old AH1 format
         if (code.startsWith('AH1|')) {
             const p = code.split('|');
-            // AH1|id|salary|role|phone|start|reset  (7 parts, index 0..6)
             if (p.length >= 3) {
                 return {
                     type: 'emp_setup',
@@ -1405,6 +1476,8 @@
                 };
             }
         }
+
+        // Plain EMP-xxxx
         if (/^EMP-/i.test(code)) {
             return { type: 'emp_setup', id: code, name: '', role: '', salary: 0, phone: '', startDate: '', reset: false, legacy: true };
         }
@@ -1419,15 +1492,16 @@
             const container = document.getElementById('qrOnlyContainer');
             container.innerHTML = '';
             const payload = buildEmpQrPayload(emp, !!asReset);
-            if (payload.length > 80) {
-                // fallback ultra-short
-                const short = 'AH1|' + emp.id + '|' + Math.round(Number(emp.salary)||0) + '|||' + (asReset?'1':'0');
-                if (typeof QRCode === 'undefined') { showToast('QR লাইব্রেরি লোড হয়নি'); return; }
-                new QRCode(container, { text: short, width: 180, height: 180, colorDark: '#0f172a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
-            } else {
-                if (typeof QRCode === 'undefined') { showToast('QR লাইব্রেরি লোড হয়নি'); return; }
-                new QRCode(container, { text: payload, width: 180, height: 180, colorDark: '#0f172a', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.L });
-            }
+            if (typeof QRCode === 'undefined') { showToast('QR লাইব্রেরি লোড হয়নি'); return; }
+            // AH2 পেলোড সাধারণত ছোট; যদি খুব বড় হয় তাহলে L লেভেল দিয়ে চেষ্টা
+            new QRCode(container, {
+                text: payload,
+                width: 180,
+                height: 180,
+                colorDark: '#0f172a',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.L
+            });
             document.getElementById('qrOnlyModal').style.display = 'flex';
         } catch (err) {
             console.error(err);
@@ -2084,4 +2158,4 @@
     };
 </script>
 </body>
-    </html>
+            </html>
