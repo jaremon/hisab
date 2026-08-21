@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>আল আকসা খেজুর শপ - হিসাব ট্র্যাকার</title>
+    <title>আমার হিসাব - ট্র্যাকার</title>
     
-    <!-- PWA ও অ্যাপ আইকন সেটিং -->
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,9 +12,11 @@
     <meta name="apple-mobile-web-app-title" content="আমার হিসাব">
     <meta name="theme-color" content="#0d9488">
     
-    <!-- আপনার আপলোড করা logo.png লিংক -->
     <link rel="icon" type="image/png" sizes="192x192" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <style>
         :root {
@@ -37,228 +38,168 @@
         body { 
             background-color: var(--bg-body);
             color: var(--text-main); 
-            padding: 12px 10px; 
+            padding: 12px 10px 85px 10px;
             min-height: 100vh;
         }
         
+        .login-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px);
+            z-index: 5000; display: flex; justify-content: center; align-items: center; padding: 16px;
+        }
+        .login-card {
+            background: #ffffff; border-radius: 20px; padding: 24px 20px; width: 100%; max-width: 360px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); text-align: center;
+        }
+        .login-toggle { display: flex; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+        .login-tab-btn {
+            flex: 1; padding: 8px; font-size: 12px; font-weight: 700; border: none; border-radius: 8px;
+            background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+        }
+        .login-tab-btn.active { background: var(--primary); color: #ffffff; box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3); }
+
         .app-container { 
-            max-width: 440px; 
-            margin: 0 auto; 
-            background: var(--card-bg); 
-            border-radius: 20px; 
-            padding: 16px; 
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--border-color);
+            max-width: 440px; margin: 0 auto; background: var(--card-bg); border-radius: 20px; 
+            padding: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color);
         }
         
-        /* Header */
         .header { 
-            text-align: center; 
-            font-size: 18px; 
-            font-weight: 800; 
-            color: #ffffff; 
-            background: var(--primary-gradient);
-            padding: 12px 16px;
-            border-radius: 14px;
-            margin-bottom: 12px; 
-            letter-spacing: 0.3px;
-            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
+            display: flex; flex-direction: column; align-items: center;
+            background: var(--primary-gradient); padding: 14px 14px 12px; border-radius: 16px;
+            margin-bottom: 12px; color: #ffffff; box-shadow: 0 6px 16px rgba(13, 148, 136, 0.25);
         }
+        .header-app-title { font-size: 15px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 10px; opacity: 0.95; }
+        .header-profile { display: flex; align-items: center; gap: 12px; width: 100%; cursor: pointer; }
+        .header-avatar {
+            width: 48px; height: 48px; border-radius: 50%; object-fit: cover;
+            border: 2.5px solid #ffffff; background: #cbd5e1; flex-shrink: 0;
+        }
+        .header-info { display: flex; flex-direction: column; text-align: left; flex: 1; min-width: 0; }
+        .header-name { font-size: 15px; font-weight: 800; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-role { font-size: 11px; opacity: 0.9; margin-top: 2px; }
+        .header-edit-btn {
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #fff;
+            padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
         
-        /* Month Navigation */
         .month-nav { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: #f1f5f9; 
-            padding: 6px 8px; 
-            border-radius: 10px; 
-            margin-bottom: 12px; 
-            border: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; 
+            padding: 6px 8px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border-color);
         }
+        .month-nav.hidden-month { display: none !important; }
         .month-btn { 
-            background: #ffffff; 
-            color: var(--primary-dark); 
-            border: 1px solid #cbd5e1; 
-            padding: 5px 10px; 
-            border-radius: 6px; 
-            font-weight: 700; 
-            font-size: 11.5px;
-            cursor: pointer; 
-            transition: all 0.2s;
+            background: #ffffff; color: var(--primary-dark); border: 1px solid #cbd5e1; 
+            padding: 5px 10px; border-radius: 6px; font-weight: 700; font-size: 11.5px; cursor: pointer;
         }
         .month-btn:active { background: var(--primary); color: #fff; }
         .month-title { font-size: 13.5px; font-weight: 800; color: var(--primary-dark); }
         
         .note-box { 
-            background: #fffbeb; 
-            border-left: 3px solid var(--warning); 
-            padding: 8px 10px; 
-            font-size: 11.5px; 
-            border-radius: 6px; 
-            margin-bottom: 12px; 
-            color: #b45309; 
-            font-weight: 600; 
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 1px solid #fde68a;
+            border-left: 4px solid var(--warning);
+            padding: 10px 12px; 
+            font-size: 12px; border-radius: 10px; margin-bottom: 12px; color: #92400e; font-weight: 600;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12);
+            display: flex; align-items: flex-start; gap: 8px; line-height: 1.45;
+        }
+        .note-box .note-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+        .note-box .note-text { flex: 1; }
+        .limit-info-box {
+            background: #f0fdf4; border: 1px solid #bbf7d0; font-size: 11px; color: #166534;
+            font-weight: 700; padding: 6px 10px; border-radius: 8px; text-align: center; margin-bottom: 8px;
         }
 
-        /* Summary Stats Grid */
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
-        .stat-card { 
-            background: #f8fafc; 
-            border: 1px solid var(--border-color); 
-            padding: 8px 10px; 
-            border-radius: 10px; 
-            text-align: center; 
+        .stats-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+        .stats-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+        
+        .stat-card { background: #f8fafc; border: 1px solid var(--border-color); padding: 8px 6px; border-radius: 10px; text-align: center; }
+        .stat-card.horizontal-card { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 8px 6px; }
+        .stat-card.total-grand { background: #ecfdf5; border-color: #a7f3d0; }
+        .stat-card.total-grand .stat-val { color: #047857; }
+        .stat-card.total-net { background: #eff6ff; border-color: #bfdbfe; }
+        .stat-card.total-net .stat-val { color: #1d4ed8; }
+        .stat-card.expense-total {
+            grid-column: span 2; background: #fef2f2; border-color: #fecaca;
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 12px;
         }
-        .stat-card.total { 
-            grid-column: span 2; 
-            background: #ecfdf5; 
-            border-color: #a7f3d0; 
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 12px;
-        }
-        .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-        .stat-val { font-size: 14.5px; font-weight: 800; color: var(--text-main); margin-top: 2px; }
-        .stat-card.total .stat-val { margin-top: 0; font-size: 17px; color: #047857; }
+        
+        .stat-label { font-size: 10.5px; color: var(--text-muted); font-weight: 700; }
+        .stat-val { font-size: 13.5px; font-weight: 800; color: var(--text-main); margin-top: 2px; }
+        .stat-card.horizontal-card .stat-val { font-size: 14px; margin-top: 4px; }
+        .stat-card.expense-total .stat-val { margin-top: 0; font-size: 16.5px; color: #dc2626; }
 
-        /* Date Slider Section */
+        .target-card {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0;
+            border-radius: 14px; padding: 12px; margin-bottom: 12px;
+        }
+        .target-header { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #166534; margin-bottom: 6px; }
+        .progress-bar-bg { background: #cbd5e1; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
+        .progress-bar-fill { background: #10b981; height: 100%; width: 0%; transition: width 0.4s ease; }
+        .target-footer { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: #15803d; }
+
         .date-section { margin-bottom: 12px; }
         .section-label { font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 6px; display: block; }
         
-        .date-slider { 
-            display: flex; 
-            gap: 6px; 
-            overflow-x: auto; 
-            padding: 4px 0 8px 0; 
-            scroll-behavior: smooth; 
-        }
+        .date-slider { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px 0; scroll-behavior: smooth; }
         .date-slider::-webkit-scrollbar { height: 4px; }
         .date-slider::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
         .date-pill { 
-            flex: 0 0 auto; 
-            padding: 6px 12px; 
-            background: #f8fafc; 
-            border-radius: 10px; 
-            font-size: 11.5px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            border: 1px solid var(--border-color); 
-            color: #64748b;
-            transition: all 0.2s;
+            flex: 0 0 auto; padding: 6px 12px; background: #f8fafc; border-radius: 10px; 
+            font-size: 11.5px; font-weight: 700; cursor: pointer; border: 1px solid var(--border-color); color: #64748b;
         }
-        .date-pill.active { 
-            background: var(--primary); 
-            color: white; 
-            border-color: var(--primary); 
-            box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
-        }
+        .date-pill.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3); }
 
-        /* Status Buttons Row */
         .status-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
         .status-btn { 
-            padding: 7px 2px; 
-            border: 1px solid var(--border-color); 
-            background: #f8fafc; 
-            border-radius: 8px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            text-align: center; 
-            font-size: 11px; 
-            color: #64748b;
-            transition: all 0.2s; 
+            padding: 7px 2px; border: 1px solid var(--border-color); background: #f8fafc; border-radius: 8px; 
+            font-weight: 700; cursor: pointer; text-align: center; font-size: 11px; color: #64748b;
         }
         .status-btn.active-p { background: var(--success); color: white; border-color: var(--success); }
         .status-btn.active-a { background: var(--danger); color: white; border-color: var(--danger); }
         .status-btn.active-h { background: var(--warning); color: white; border-color: var(--warning); }
         .status-btn.active-n { background: #64748b; color: white; border-color: #64748b; }
 
-        /* Dual Inputs */
         .dual-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
         
-        .form-group { margin-bottom: 8px; }
-        input[type="number"], input[type="text"] { 
-            width: 100%; 
-            padding: 8px 10px; 
-            border: 1px solid var(--border-color); 
-            border-radius: 8px; 
-            font-size: 12.5px; 
-            outline: none; 
-            background: #f8fafc; 
+        .form-group { margin-bottom: 8px; text-align: left; }
+        input[type="number"], input[type="text"], input[type="password"], select { 
+            width: 100%; padding: 8px 10px; border: 1px solid var(--border-color); 
+            border-radius: 8px; font-size: 12.5px; outline: none; background: #f8fafc; 
         }
-        input:focus { border-color: var(--primary); background: #ffffff; }
+        input:focus, select:focus { border-color: var(--primary); background: #ffffff; }
 
         .save-btn { 
-            width: 100%; 
-            background: var(--primary-gradient); 
-            color: white; 
-            border: none; 
-            padding: 11px; 
-            font-size: 14px; 
-            font-weight: 700; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            transition: opacity 0.2s;
+            width: 100%; background: var(--primary-gradient); color: white; border: none; 
+            padding: 11px; font-size: 14px; font-weight: 700; border-radius: 10px; cursor: pointer;
             box-shadow: 0 4px 10px rgba(13, 148, 136, 0.25);
         }
         .save-btn:active { opacity: 0.9; }
-        
-        /* History & Controls Row */
+
         .history-sec { margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px; }
         .history-title { font-size: 12.5px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
         
-        .controls-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 10px;
-        }
-
-        .filter-container {
-            display: flex;
-            gap: 4px;
-            overflow-x: auto;
-            flex-shrink: 0;
-        }
+        .controls-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+        .filter-container { display: flex; gap: 4px; overflow-x: auto; flex-shrink: 0; }
         .filter-pill {
-            padding: 5px 8px;
-            background: #f1f5f9;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 10.5px;
-            font-weight: 700;
-            color: #64748b;
-            cursor: pointer;
-            white-space: nowrap;
+            padding: 5px 8px; background: #f1f5f9; border: 1px solid var(--border-color);
+            border-radius: 8px; font-size: 10.5px; font-weight: 700; color: #64748b; cursor: pointer; white-space: nowrap;
         }
-        .filter-pill.active {
-            background: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-        }
-
+        .filter-pill.active { background: var(--primary); color: #ffffff; border-color: var(--primary); }
         .search-compact {
-            flex: 1;
-            min-width: 85px;
-            padding: 5px 8px !important;
-            font-size: 11px !important;
-            border-radius: 8px !important;
-            border: 1px solid var(--border-color) !important;
-            background: #ffffff !important;
+            flex: 1; min-width: 85px; padding: 5px 8px !important; font-size: 11px !important;
+            border-radius: 8px !important; border: 1px solid var(--border-color) !important; background: #ffffff !important;
         }
 
-        .history-list { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        .history-list { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
         .history-card { 
-            background: #f8fafc; 
-            border: 1px solid var(--border-color); 
-            border-radius: 8px; 
-            padding: 8px 10px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            cursor: pointer; 
+            background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; 
+            padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; 
         }
         .history-card:hover { background: #f1f5f9; }
         .card-left { display: flex; flex-direction: column; gap: 1px; }
@@ -269,130 +210,582 @@
         .card-sub { font-size: 10px; color: var(--text-muted); }
         .card-note { font-size: 10px; color: #d97706; font-style: italic; }
 
-        /* Toast Popup */
-        .toast {
-            visibility: hidden;
-            min-width: 180px;
-            background-color: var(--primary-dark);
-            color: #fff;
-            text-align: center;
-            border-radius: 20px;
-            padding: 8px 14px;
-            position: fixed;
-            z-index: 999;
-            left: 50%;
-            bottom: 25px;
-            transform: translateX(-50%);
-            font-size: 12px;
-            font-weight: 600;
-            opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s;
+        .settings-card {
+            background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 12px; margin-bottom: 12px; text-align: left;
         }
-        .toast.show { visibility: visible; opacity: 1; bottom: 35px; }
+        .settings-btn {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);
+            background: #ffffff; font-size: 12.5px; font-weight: 700; color: var(--text-main);
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px;
+        }
+        .settings-btn:active { background: #e2e8f0; }
+
+        .profile-pic-container { text-align: center; margin-bottom: 14px; }
+        .profile-img-preview {
+            width: 85px; height: 85px; border-radius: 50%; object-fit: cover;
+            border: 3px solid var(--primary); background: #e2e8f0; margin-bottom: 8px;
+        }
+
+        .toast {
+            visibility: hidden; min-width: 180px; background-color: var(--primary-dark); color: #fff;
+            text-align: center; border-radius: 20px; padding: 8px 14px; position: fixed; z-index: 9999;
+            left: 50%; bottom: 85px; transform: translateX(-50%); font-size: 12px; font-weight: 600;
+            opacity: 0; transition: opacity 0.3s, bottom 0.3s;
+        }
+        .toast.show { visibility: visible; opacity: 1; bottom: 95px; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 6000;
+            justify-content: center; align-items: center; padding: 16px;
+        }
+        .modal-card {
+            background: #ffffff; border-radius: 20px; padding: 20px; max-width: 340px; width: 100%;
+            text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+            animation: modalPop 0.3s ease-out; max-height: 90vh; overflow-y: auto;
+        }
+        @keyframes modalPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .modal-icon { font-size: 36px; margin-bottom: 10px; }
+        .modal-title { font-size: 16px; font-weight: 800; color: #dc2626; margin-bottom: 6px; }
+        .modal-body { font-size: 12.5px; color: #475569; margin-bottom: 16px; line-height: 1.4; }
+        .modal-btn {
+            background: #dc2626; color: white; border: none; padding: 9px 18px;
+            border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; width: 100%;
+        }
+        .modal-btn-secondary {
+            background: #e2e8f0; color: #334155; border: none; padding: 9px 18px;
+            border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; width: 100%; margin-top: 8px;
+        }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px); border-top: 1px solid rgba(226, 232, 240, 0.8);
+            display: flex; justify-content: space-around; padding: 8px 6px 10px 6px;
+            box-shadow: 0 -8px 25px rgba(15, 23, 42, 0.08); z-index: 2000; max-width: 440px;
+            margin: 0 auto; border-radius: 20px 20px 0 0;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; color: #64748b; cursor: pointer; width: 20%;
+            padding: 4px 0; border-radius: 12px; position: relative;
+        }
+        .nav-item .icon { font-size: 18px; margin-bottom: 3px; }
+        .nav-item.active { color: var(--primary); background: rgba(13, 148, 136, 0.08); }
+        .nav-item.active .icon { transform: translateY(-2px) scale(1.1); }
+        .nav-item.active::after {
+            content: ''; position: absolute; bottom: 2px; width: 14px; height: 3px;
+            background: var(--primary); border-radius: 3px;
+        }
+        .nav-item.hidden-nav { display: none !important; }
+
+        #printArea { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: #ffffff; color: #000000; padding: 15px; }
+            .pdf-modern-header { background: linear-gradient(135deg, #0d9488, #0f172a); color: white; padding: 18px; border-radius: 12px; margin-bottom: 18px; text-align: center; }
+            .pdf-modern-header h2 { margin: 0 0 6px 0; font-size: 20px; }
+            .pdf-modern-header p { margin: 0; font-size: 12px; opacity: 0.9; }
+            .pdf-summary-modern { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+            .pdf-box { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; background: #f8fafc; }
+            .pdf-box h4 { margin: 0 0 8px 0; color: #0d9488; font-size: 13px; }
+            .pdf-table-modern { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .pdf-table-modern th { background: #0d9488; color: white; padding: 8px 6px; text-align: center; }
+            .pdf-table-modern td { border: 1px solid #e2e8f0; padding: 7px 5px; text-align: center; }
+            .pdf-table-modern tr:nth-child(even) { background: #f1f5f9; }
+            .pdf-footer { margin-top: 20px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+        }
+
+        #qr-reader { width: 100%; max-width: 280px; margin: 0 auto 12px auto; }
+        .download-qr-btn {
+            background: #0d9488; color: white; border: none; padding: 8px 14px;
+            border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; margin-top: 8px; width: 100%;
+        }
+
+        .emp-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+        .emp-stat-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 4px; text-align: center; }
+        .emp-stat-box .val { font-size: 15px; font-weight: 800; color: var(--primary-dark); }
+        .emp-stat-box .lbl { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+
+        .id-box {
+            background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+            padding: 10px; text-align: center; margin-bottom: 10px;
+        }
+        .id-box .id-label { font-size: 11px; color: #166534; font-weight: 600; margin-bottom: 4px; }
+        .id-box .id-value { font-size: 16px; font-weight: 800; color: #0f766e; letter-spacing: 0.5px; }
+
+        .qr-scan-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .qr-option-btn {
+            padding: 10px 8px; border-radius: 10px; border: none; font-weight: 700; font-size: 12px;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .qr-option-btn.camera { background: #0f766e; color: #fff; }
+        .qr-option-btn.gallery { background: #1e293b; color: #fff; }
+
+        /* Employee list card */
+        .emp-list-card {
+            background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px;
+            padding: 10px 12px; display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 8px; cursor: pointer; margin-bottom: 6px;
+        }
+        .emp-list-card:hover { background: #f1f5f9; }
+        .emp-list-left { flex: 1; min-width: 0; }
+        .emp-list-name { font-weight: 800; font-size: 13px; color: var(--text-main); }
+        .emp-list-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .emp-list-salary { font-size: 12px; font-weight: 700; color: #10b981; margin-top: 4px; }
+        .emp-list-right { text-align: right; flex-shrink: 0; }
+        .emp-id-label {
+            display: inline-block; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;
+            padding: 2px 7px; border-radius: 5px; font-size: 10.5px; font-weight: 700; margin-bottom: 5px;
+        }
+        .emp-action-btns { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
+        .emp-action-btns button {
+            padding: 3px 7px; font-size: 10px; border-radius: 5px; cursor: pointer;
+            border: 1px solid #cbd5e1; background: #f1f5f9; font-weight: 600;
+        }
+        .emp-action-btns .qr-btn { background: #ecfdf5; color: #0f766e; border-color: #a7f3d0; }
+        .emp-action-btns .del-btn { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
     </style>
 </head>
 <body>
 
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" class="login-overlay">
+    <div class="login-card">
+        <h2 style="font-size: 18px; color: var(--primary-dark); margin-bottom: 12px;">আমার হিসাব অ্যাপে স্বাগতম</h2>
+        
+        <div class="login-toggle">
+            <button class="login-tab-btn active" id="tabEmpLogin" onclick="switchLoginMode('EMP')">এমপ্লয়ি</button>
+            <button class="login-tab-btn" id="tabCeoLogin" onclick="switchLoginMode('CEO')">সিইও</button>
+        </div>
+
+        <div id="empLoginBox">
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4;">
+                প্রথমবার QR কোড স্ক্যান করে ইউজারনেম ও পাসওয়ার্ড সেট করুন। পরবর্তীতে শুধু ইউজারনেম ও পাসওয়ার্ড দিয়ে লগইন করুন।
+            </p>
+            <div class="qr-scan-options">
+                <button class="qr-option-btn camera" onclick="startQRScanner()"><span style="font-size:18px;">📷</span>ক্যামেরা স্ক্যান</button>
+                <button class="qr-option-btn gallery" onclick="document.getElementById('qrFileInput').click()"><span style="font-size:18px;">🖼️</span>গ্যালারি থেকে</button>
+            </div>
+            <input type="file" id="qrFileInput" accept="image/*" style="display:none" onchange="scanQRFromFile(event)">
+            <div class="form-group"><input type="text" id="empLoginUser" placeholder="ইউজারনেম"></div>
+            <div class="form-group"><input type="password" id="empLoginPass" placeholder="পাসওয়ার্ড"></div>
+            <button class="save-btn" onclick="loginEmployee()">প্রবেশ করুন</button>
+            <button type="button" onclick="openQrRequestModal()" style="width:100%; margin-top:10px; padding:9px; border-radius:10px; border:1px dashed #0d9488; background:#f0fdfa; color:#0f766e; font-size:12px; font-weight:700; cursor:pointer;">🔑 পাসওয়ার্ড ভুলে গেলে — QR রিকোয়েস্ট পাঠান</button>
+        </div>
+
+        <div id="ceoLoginBox" style="display: none;">
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">সিইও অ্যাকাউন্ট দিয়ে লগইন করুন</p>
+            <div class="form-group"><input type="text" id="ceoUser" placeholder="ইউজারনেম"></div>
+            <div class="form-group"><input type="password" id="ceoPass" placeholder="পাসওয়ার্ড"></div>
+            <button class="save-btn" style="background: linear-gradient(135deg, #0f172a 0%, #0d9488 100%);" onclick="loginCEO()">প্রবেশ করুন</button>
+            <button type="button" onclick="openCeoForgotModal()" style="width:100%; margin-top:10px; padding:9px; border-radius:10px; border:1px dashed #64748b; background:#f8fafc; color:#475569; font-size:12px; font-weight:700; cursor:pointer;">🔐 পাসওয়ার্ড ভুলে গেলে — সিকিউরিটি পিন</button>
+        </div>
+    </div>
+</div>
+
+<!-- QR Scanner Modal -->
+<div id="qrScannerModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 340px;">
+        <div class="modal-title" style="color: var(--primary-dark);">📷 QR কোড স্ক্যান করুন</div>
+        <div id="qr-reader"></div>
+        <button class="month-btn" style="width: 100%; margin-top: 8px; border: none; background: #e2e8f0;" onclick="stopQRScanner()">বন্ধ করুন</button>
+    </div>
+</div>
+
+<!-- First-time Credential Setup -->
+<div id="setCredModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-title" style="color: var(--primary-dark);">🔐 ইউজারনেম ও পাসওয়ার্ড সেট করুন</div>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">এই ইউজারনেম ও পাসওয়ার্ড দিয়ে পরবর্তীতে লগইন করতে পারবেন।</p>
+        <div class="form-group"><input type="text" id="setUsername" placeholder="নতুন ইউজারনেম"></div>
+        <div class="form-group"><input type="password" id="setPassword" placeholder="নতুন পাসওয়ার্ড"></div>
+        <div class="form-group"><input type="password" id="setPasswordConfirm" placeholder="পাসওয়ার্ড আবার লিখুন"></div>
+        <button class="save-btn" onclick="saveFirstTimeCredentials()">সেভ করুন ও লগইন</button>
+        <button class="month-btn" style="width: 100%; margin-top: 6px; border: none; background: #e2e8f0;" onclick="closeSetCredModal()">বাতিল</button>
+    </div>
+</div>
+
+<!-- Employee QR Reset Request Modal -->
+<div id="qrRequestModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-title" style="color: var(--primary-dark);">🔑 QR রিকোয়েস্ট পাঠান</div>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px; line-height: 1.4;">আপনার ইউনিক আইডি (EMP-xxxx) লিখুন। সিইও অ্যাপ্রুভ করলে নতুন QR পাবেন ও নতুন ইউজারনেম/পাসওয়ার্ড সেট করতে পারবেন।</p>
+        <div class="form-group"><input type="text" id="qrRequestEmpId" placeholder="যেমন: EMP-1001"></div>
+        <button class="save-btn" onclick="submitQrRequest()">রিকোয়েস্ট পাঠান</button>
+        <button class="month-btn" style="width: 100%; margin-top: 6px; border: none; background: #e2e8f0;" onclick="closeQrRequestModal()">বাতিল</button>
+    </div>
+</div>
+
+<!-- CEO Forgot Password Modal (Security PIN) -->
+<div id="ceoForgotModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-title" style="color: var(--primary-dark);">🔐 সিইও পাসওয়ার্ড রিকভারি</div>
+        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px; line-height:1.4;">আপনার ইউনিক সিকিউরিটি পিন (ইমেইল পিন) দিন। সঠিক হলে নতুন ইউজারনেম ও পাসওয়ার্ড সেট করতে পারবেন।</p>
+        <div class="form-group"><input type="password" id="ceoSecurityPin" placeholder="ইমেইল পিন (৮ ডিজিট)" maxlength="8" inputmode="numeric"></div>
+        <div class="form-group"><input type="text" id="ceoForgotNewUser" placeholder="নতুন ইউজারনেম"></div>
+        <div class="form-group"><input type="password" id="ceoForgotNewPass" placeholder="নতুন পাসওয়ার্ড"></div>
+        <div class="form-group"><input type="password" id="ceoForgotNewPassConfirm" placeholder="পাসওয়ার্ড আবার লিখুন"></div>
+        <button class="save-btn" onclick="resetCeoWithPin()">পাসওয়ার্ড রিসেট করুন</button>
+        <button class="month-btn" style="width: 100%; margin-top: 6px; border: none; background: #e2e8f0;" onclick="closeCeoForgotModal()">বাতিল</button>
+    </div>
+</div>
+
+<!-- CEO Accept QR Request Modal -->
+<div id="acceptQrRequestModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-title" style="color: var(--primary-dark);">📨 QR রিকোয়েস্ট</div>
+        <p style="font-size: 13px; color: #475569; margin-bottom: 12px;" id="acceptQrRequestBody">এমপ্লয়ি নতুন QR চাচ্ছে।</p>
+        <button class="save-btn" style="background: linear-gradient(135deg, #0d9488, #0f172a);" onclick="acceptQrRequest()">✓ এক্সেপ্ট ও নতুন QR দিন</button>
+        <button class="modal-btn-secondary" onclick="rejectQrRequest()">বাতিল / রিজেক্ট</button>
+    </div>
+</div>
+
 <div class="app-container">
-    <div class="header">আল আকসা খেজুর শপ</div>
-    
+    <!-- Header -->
+    <div class="header">
+        <div class="header-app-title">আমার হিসাব</div>
+        <div class="header-profile" onclick="openHeaderProfileEdit()">
+            <img id="headerAvatar" class="header-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="Profile">
+            <div class="header-info">
+                <span class="header-name" id="displayProfileName">ব্যবহারকারীর নাম</span>
+                <span class="header-role" id="displayProfileRole">আইডি: N/A</span>
+            </div>
+            <button class="header-edit-btn" onclick="event.stopPropagation(); openHeaderProfileEdit()">✏️ এডিট</button>
+        </div>
+    </div>
+
     <!-- Month Navigation -->
-    <div class="month-nav">
+    <div class="month-nav" id="monthNavBar">
         <button class="month-btn" onclick="changeMonth(-1)">◀ গত মাস</button>
         <div class="month-title" id="monthDisplay">--</div>
         <button class="month-btn" onclick="changeMonth(1)">পরের মাস ▶</button>
     </div>
 
-    <div class="note-box">📌 ৬ আগস্ট থেকে আল আকসা খেজুর শপে কাজ শুরু হয়েছে।</div>
+    <!-- TAB 1: আয় ও হাজিরা -->
+    <div id="tab1" class="tab-content active">
+        <div class="note-box" id="salaryNoteBox"><span class="note-icon">📌</span><span class="note-text">কাজ শুরুর তারিখ লোড হচ্ছে...</span></div>
+        <div class="limit-info-box" id="limitInfoBox">⚠️ সর্বোচ্চ বেতন বাজেটসীমা: ৳ ১৫,০০০</div>
 
-    <!-- Summary Stats -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">উপস্থিত</div>
-            <div class="stat-val" id="totalPresent">০ দিন</div>
+        <div class="stats-grid-3">
+            <div class="stat-card"><div class="stat-label">উপস্থিত</div><div class="stat-val" id="totalPresent">০ দিন</div></div>
+            <div class="stat-card"><div class="stat-label">অনুপস্থিত</div><div class="stat-val" id="totalAbsent">০ দিন</div></div>
+            <div class="stat-card"><div class="stat-label">ছুটি</div><div class="stat-val" id="totalHoliday">০ দিন</div></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">অনুপস্থিত</div>
-            <div class="stat-val" id="totalAbsent">০ দিন</div>
+        <div class="stats-grid-2">
+            <div class="stat-card"><div class="stat-label">মোট দৈনিক</div><div class="stat-val" id="totalDaily">৳ ০</div></div>
+            <div class="stat-card"><div class="stat-label">মোট নগদ</div><div class="stat-val" id="totalCash">৳ ০</div></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">মোট দৈনিক</div>
-            <div class="stat-val" id="totalDaily">৳ ০</div>
+        <div class="stats-grid-2" style="margin-bottom: 12px;">
+            <div class="stat-card horizontal-card total-grand"><div class="stat-label">সর্বমোট পাওনা:</div><div class="stat-val" id="grandTotal">৳ ০</div></div>
+            <div class="stat-card horizontal-card total-net"><div class="stat-label">হাতে নিট জমা (Net):</div><div class="stat-val" id="netCashInHand">৳ ০</div></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">মোট নগদ</div>
-            <div class="stat-val" id="totalCash">৳ ০</div>
-        </div>
-        <div class="stat-card total">
-            <div class="stat-label">সর্বমোট পাওনা:</div>
-            <div class="stat-val" id="grandTotal">৳ ০</div>
-        </div>
-    </div>
 
-    <!-- Date Slider -->
-    <div class="date-section">
-        <span class="section-label">তারিখ নির্বাচন করুন:</span>
-        <div class="date-slider" id="dateSlider"></div>
-    </div>
-
-    <!-- Attendance Status Buttons -->
-    <span class="section-label">হাজিরা স্ট্যাটাস:</span>
-    <div class="status-btns">
-        <div class="status-btn" id="btnP" onclick="setStatus('PRESENT')">🟢 উপস্থিত</div>
-        <div class="status-btn" id="btnA" onclick="setStatus('ABSENT')">🔴 অনুপস্থিত</div>
-        <div class="status-btn" id="btnH" onclick="setStatus('HOLIDAY')">🟡 ছুটি</div>
-        <div class="status-btn" id="btnN" onclick="setStatus('NEI')">⚪ নেই</div>
-    </div>
-
-    <!-- Horizontal Money Inputs -->
-    <div class="dual-inputs">
-        <div>
-            <span class="section-label">দৈনিক মজুরি (৳):</span>
-            <input type="number" id="dailyInput" value="200" placeholder="২০০">
+        <div class="date-section">
+            <span class="section-label">তারিখ নির্বাচন করুন:</span>
+            <div class="date-slider" id="dateSlider"></div>
         </div>
-        <div>
-            <span class="section-label">নগদ গ্রহণ (৳):</span>
-            <input type="number" id="cashInput" placeholder="০">
+
+        <span class="section-label">হাজিরা স্ট্যাটাস:</span>
+        <div class="status-btns">
+            <div class="status-btn" id="btnP" onclick="setStatus('PRESENT')">🟢 উপস্থিত</div>
+            <div class="status-btn" id="btnA" onclick="setStatus('ABSENT')">🔴 অনুপস্থিত</div>
+            <div class="status-btn" id="btnH" onclick="setStatus('HOLIDAY')">🟡 ছুটি</div>
+            <div class="status-btn" id="btnN" onclick="setStatus('NEI')">⚪ নেই</div>
         </div>
-    </div>
 
-    <div class="form-group">
-        <span class="section-label">বিশেষ নোট (ঐচ্ছিক):</span>
-        <input type="text" id="noteInput" placeholder="অ্যাডভান্স জমা / অতিরিক্ত বিবরণ...">
-    </div>
+        <div class="dual-inputs">
+            <div><span class="section-label">দৈনিক মজুরি (৳):</span><input type="number" id="dailyInput" value="200" placeholder="২০০"></div>
+            <div><span class="section-label">নগদ গ্রহণ (৳):</span><input type="number" id="cashInput" placeholder="০"></div>
+        </div>
+        <div class="form-group"><span class="section-label">বিশেষ নোট (ঐচ্ছিক):</span><input type="text" id="noteInput" placeholder="অ্যাডভান্স জমা / অতিরিক্ত বিবরণ..."></div>
+        <button class="save-btn" onclick="saveData()">হিসাব সেভ করুন</button>
 
-    <button class="save-btn" onclick="saveData()">হিসাব সেভ করুন</button>
-
-    <!-- History & Controls Row -->
-    <div class="history-sec">
-        <div class="history-title">চলতি মাসের লেনদেন হিস্ট্রি:</div>
-        
-        <div class="controls-row">
-            <div class="filter-container">
-                <div class="filter-pill active" id="f-ALL" onclick="setFilter('ALL')">সব</div>
-                <div class="filter-pill" id="f-PRESENT" onclick="setFilter('PRESENT')">🟢</div>
-                <div class="filter-pill" id="f-ABSENT" onclick="setFilter('ABSENT')">🔴</div>
-                <div class="filter-pill" id="f-CASH" onclick="setFilter('CASH')">💵 নগদ</div>
+        <div class="history-sec">
+            <div class="history-title">চলতি মাসের লেনদেন হিস্ট্রি:</div>
+            <div class="controls-row">
+                <div class="filter-container">
+                    <div class="filter-pill active" id="f-ALL" onclick="setFilter('ALL')">সব</div>
+                    <div class="filter-pill" id="f-PRESENT" onclick="setFilter('PRESENT')">🟢</div>
+                    <div class="filter-pill" id="f-ABSENT" onclick="setFilter('ABSENT')">🔴</div>
+                    <div class="filter-pill" id="f-CASH" onclick="setFilter('CASH')">💵 নগদ</div>
+                </div>
+                <input type="text" id="searchInput" class="search-compact" placeholder="🔍 তারিখ (যেমন: ৫ বা 05)" oninput="renderHistory()">
             </div>
-            
-            <input type="text" id="searchInput" class="search-compact" placeholder="🔍 তারিখ (যেমন: ৫ বা 05)" oninput="renderHistory()">
+            <div class="history-list" id="historyList"></div>
         </div>
-        
-        <div class="history-list" id="historyList"></div>
     </div>
+
+    <!-- TAB 2: ব্যয় -->
+    <div id="tab2" class="tab-content">
+        <div class="stats-grid-2">
+            <div class="stat-card"><div class="stat-label">যাতায়াত ও খাবার</div><div class="stat-val" id="totalRegularExp" style="color:#ef4444;">৳ ০</div></div>
+            <div class="stat-card"><div class="stat-label">বাড়তি খরচ</div><div class="stat-val" id="totalExtraExpense" style="color:#d97706;">৳ ০</div></div>
+            <div class="stat-card expense-total"><div class="stat-label" style="color:#991b1b;">সর্বমোট খরচ:</div><div class="stat-val" id="totalExpense">৳ ০</div></div>
+        </div>
+        <div class="date-section"><span class="section-label">তারিখ নির্বাচন করুন:</span><div class="date-slider" id="expDateSlider"></div></div>
+        <div class="dual-inputs">
+            <div><span class="section-label">🚌 যাতায়াত খরচ (৳):</span><input type="number" id="travelExpense" placeholder="০"></div>
+            <div><span class="section-label">🍚 খাবার খরচ (৳):</span><input type="number" id="foodExpense" placeholder="০"></div>
+        </div>
+        <div class="form-group"><span class="section-label">⚡ বাড়াত/বাড়তি খরচ (৳):</span><input type="number" id="extraExpense" placeholder="০"></div>
+        <div class="form-group"><span class="section-label">📝 খরচের নোট/বিবরণ:</span><input type="text" id="expNoteInput" placeholder="বাড়তি খরচ বা জরুরি বিবরণ..."></div>
+        <button class="save-btn" style="background: linear-gradient(135deg, #0f172a 0%, #0d9488 100%);" onclick="saveExpenseData()">ব্যয় সেভ করুন</button>
+        <div class="history-sec"><div class="history-title">ব্যয়ের হিস্ট্রি:</div><div class="history-list" id="expHistoryList"></div></div>
+    </div>
+
+    <!-- TAB 3: সঞ্চয় -->
+    <div id="tab3" class="tab-content">
+        <div class="target-card">
+            <div class="target-header"><span>🎯 সঞ্চয়ের টার্গেট</span><span id="targetPercent">০% পূরণ</span></div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+            <div class="target-footer"><span>জমা: <b id="savAccumulated">৳ ০</b></span><span>ঘাটতি: <b id="targetDeficit">৳ ০</b></span></div>
+        </div>
+        <div class="form-group" style="background: #f1f5f9; padding: 10px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--border-color);">
+            <span class="section-label" style="color: var(--primary-dark);">🎯 আপনার সঞ্চয়ের টার্গেট সেট করুন (৳):</span>
+            <div style="display: flex; gap: 6px;">
+                <input type="number" id="targetGoalInput" placeholder="যেমন: ৫০০০০" style="background: #fff;">
+                <button onclick="saveTargetGoal()" style="background: var(--primary); color: white; border: none; padding: 0 14px; border-radius: 8px; font-weight: 700; cursor: pointer;">সেট</button>
+            </div>
+        </div>
+        <div class="date-section"><span class="section-label">তারিখ নির্বাচন করুন:</span><div class="date-slider" id="savDateSlider"></div></div>
+        <div class="form-group"><span class="section-label">💰 আজকের সঞ্চয় (৳):</span><input type="number" id="dailySavingsInput" placeholder="যেমন: ৫০০"></div>
+        <div class="form-group"><span class="section-label">📝 সঞ্চয়ের বিশেষ নোট (ঐচ্ছিক):</span><input type="text" id="savNoteInput" placeholder="যেমন: ব্যাংক ডিপোজিট / ডিপিএস..."></div>
+        <button class="save-btn" style="background: linear-gradient(135deg, #059669 0%, #0f172a 100%);" onclick="saveSavingsData()">সঞ্চয় সেভ করুন</button>
+        <div class="history-sec"><div class="history-title">সঞ্চয়ের হিস্ট্রি:</div><div class="history-list" id="savHistoryList"></div></div>
+    </div>
+
+    <!-- TAB 4: এমপ্লয়ি ম্যানেজমেন্ট -->
+    <div id="tab4" class="tab-content">
+        <div class="history-title" style="font-size: 14px; text-align: center; margin-bottom: 12px;">👥 এমপ্লয়ি ম্যানেজমেন্ট ও কিউআর সিস্টেম</div>
+        <div class="settings-card" id="tab4AddEmpCard">
+            <span class="section-label" id="empFormTitle">➕ নতুন এমপ্লয়ি যুক্ত করুন</span>
+            <input type="hidden" id="editEmpIndex" value="-1">
+            <div class="id-box">
+                <div class="id-label">ইউনিক আইডি (অটো জেনারেট)</div>
+                <div class="id-value" id="autoIdPreview">EMP-xxxx</div>
+            </div>
+            <div class="form-group">
+                <span class="section-label">পদবী নির্বাচন করুন</span>
+                <select id="t4EmpRole">
+                    <option value="">পদবী বেছে নিন</option>
+                    <option value="বিক্রয় প্রতিনিধি">বিক্রয় প্রতিনিধি</option>
+                    <option value="স্টোর ম্যানেজার">স্টোর ম্যানেজার</option>
+                    <option value="ডিলেভারি এক্সিকিউটিভ">ডিলেভারি এক্সিকিউটিভ</option>
+                    <option value="অ্যাকাউন্ট্যান্ট">অ্যাকাউন্ট্যান্ট</option>
+                    <option value="সুপারভাইজার">সুপারভাইজার</option>
+                    <option value="অ্যাসিস্ট্যান্ট ম্যানেজার">অ্যাসিস্ট্যান্ট ম্যানেজার</option>
+                    <option value="ম্যানেজার">ম্যানেজার</option>
+                    <option value="অন্যান্য">অন্যান্য</option>
+                </select>
+            </div>
+            <div class="form-group"><span class="section-label">নির্ধারিত বেতন (৳)</span><input type="number" id="t4EmpSalary" placeholder="বেতন লিখুন"></div>
+            <div class="form-group"><span class="section-label">মোবাইল নাম্বার (ঐচ্ছিক)</span><input type="text" id="t4EmpPhone" placeholder="মোবাইল নাম্বার"></div>
+            <div class="form-group"><span class="section-label">📅 জয়েনিং ডেট</span><input type="date" id="t4EmpJoinDate" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; font-size:12.5px; background:#f8fafc;"></div>
+            <button class="save-btn" style="padding: 9px; font-size: 13px;" onclick="saveTab4Employee()">সেভ করুন</button>
+            <button id="cancelEditBtn" class="month-btn" style="width: 100%; margin-top: 6px; display: none; background: #e2e8f0; border: none;" onclick="resetEmpForm()">বাতিল</button>
+        </div>
+        <div class="form-group"><input type="text" id="searchEmpViewer" placeholder="🔍 এমপ্লয়ি নাম বা আইডি খুঁজুন..." oninput="renderEmployeeList()"></div>
+        <div class="history-list" id="employeeListViewer" style="max-height: 380px;"></div>
+    </div>
+
+    <!-- TAB 5: সেটিংস -->
+    <div id="tab5" class="tab-content">
+        <div class="history-title" style="font-size: 14px; text-align: center; margin-bottom: 12px;">⚙️ অ্যাপ সেটিংস</div>
+        <div class="settings-card" id="ceoCredCard">
+            <span class="section-label">🔐 সিইও পাসওয়ার্ড আপডেট</span>
+            <div class="form-group"><input type="text" id="ceoNewUser" placeholder="নতুন ইউজারনেম"></div>
+            <div class="form-group"><input type="password" id="ceoNewPass" placeholder="নতুন পাসওয়ার্ড"></div>
+            <div class="form-group"><input type="password" id="ceoNewPassConfirm" placeholder="পাসওয়ার্ড আবার লিখুন"></div>
+            <button class="settings-btn" style="background: var(--primary); color: #fff;" onclick="changeCeoCredentials()">আপডেট করুন</button>
+        </div>
+        <div class="settings-card" id="empCredCard" style="display: none;">
+            <span class="section-label">🔐 আমার ইউজারনেম ও পাসওয়ার্ড পরিবর্তন</span>
+            <div class="form-group"><input type="text" id="empNewUser" placeholder="নতুন ইউজারনেম"></div>
+            <div class="form-group"><input type="password" id="empNewPass" placeholder="নতুন পাসওয়ার্ড"></div>
+            <div class="form-group"><input type="password" id="empNewPassConfirm" placeholder="পাসওয়ার্ড আবার লিখুন"></div>
+            <button class="settings-btn" style="background: var(--primary); color: #fff;" onclick="changeEmpCredentials()">আপডেট করুন</button>
+        </div>
+        <div class="settings-card">
+            <span class="section-label">🖨️ হাজিরা ও আয় রিপোর্ট</span>
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">চলতি মাসের হাজিরা, দৈনিক আয় ও নগদ গ্রহণের রিপোর্ট প্রিন্ট করুন।</p>
+            <button class="settings-btn" style="background: #0d9488; color: #fff;" onclick="generatePDFReport()">📄 প্রিন্ট করুন</button>
+        </div>
+        <div class="settings-card">
+            <span class="section-label">💾 ডাটা ব্যাকআপ ও রিস্টোর</span>
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">সমস্ত তথ্য JSON ফাইল হিসেবে ব্যাকআপ নিন বা রিস্টোর করুন।</p>
+            <button class="settings-btn" onclick="exportDataJSON()">📥 ব্যাকআপ ডাউনলোড</button>
+            <button class="settings-btn" onclick="document.getElementById('fileInput').click()">📤 রিস্টোর করুন</button>
+            <input type="file" id="fileInput" style="display:none" onchange="importDataJSON(event)" accept=".json">
+        </div>
+        <button class="save-btn" style="background: #dc2626; margin-top: 10px;" onclick="logoutApp()">🚪 লগআউট করুন</button>
+    </div>
+</div>
+
+<!-- Profile Edit Modal -->
+<div id="headerProfileModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-title" style="color: var(--primary-dark);">👤 প্রোফাইল সংশোধন</div>
+        <div class="profile-pic-container" style="margin-top: 10px;">
+            <img id="editHeaderImgPreview" class="profile-img-preview" src="" alt="Profile Preview"><br>
+            <button class="month-btn" onclick="document.getElementById('headerPicInput').click()">📷 নতুন ছবি বেছে নিন</button>
+            <input type="file" id="headerPicInput" style="display:none" accept="image/*" onchange="uploadHeaderPic(event)">
+        </div>
+        <div class="form-group"><span class="section-label">আপনার নাম:</span><input type="text" id="editHeaderNameInput" placeholder="নাম লিখুন"></div>
+        <div class="form-group" id="editPhoneGroup"><span class="section-label">মোবাইল নাম্বার:</span><input type="text" id="editHeaderPhoneInput" placeholder="মোবাইল নাম্বার"></div>
+        <div class="form-group" id="editEmailGroup" style="display:none;"><span class="section-label">ইমেইল (পাসওয়ার্ড রিকভারির জন্য):</span><input type="text" id="editHeaderEmailInput" placeholder="zoe.m@example.net"></div>
+        <p style="font-size: 10.5px; color: var(--text-muted); margin-bottom: 12px; text-align: left;">* পদবী এবং আইডি পরিবর্তনযোগ্য নয়।</p>
+        <button class="save-btn" onclick="saveHeaderProfileChanges()">সেভ করুন</button>
+        <button class="month-btn" style="width: 100%; margin-top: 6px; border: none; background: #e2e8f0;" onclick="closeHeaderProfileModal()">বাতিল</button>
+    </div>
+</div>
+
+<!-- Employee Detail Modal -->
+<div id="empDetailModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 360px;">
+        <div class="modal-title" id="mEmpName" style="color: var(--primary-dark);">এমপ্লয়ির নাম</div>
+        <div style="font-size:12px; color:var(--text-muted);" id="mEmpRole">পদবী</div>
+        <div style="font-size:13px; font-weight:800; color:var(--primary); margin-top:4px;" id="mEmpId">ID: EMP-000</div>
+        <div class="emp-stat-grid">
+            <div class="emp-stat-box"><div class="val" id="mPresent">০</div><div class="lbl">উপস্থিত</div></div>
+            <div class="emp-stat-box"><div class="val" id="mAbsent">০</div><div class="lbl">অনুপস্থিত</div></div>
+            <div class="emp-stat-box"><div class="val" id="mHoliday">০</div><div class="lbl">ছুটি</div></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+            <div class="emp-stat-box"><div class="val" id="mTotalDaily" style="color:#047857;">৳০</div><div class="lbl">মোট দৈনিক</div></div>
+            <div class="emp-stat-box"><div class="val" id="mTotalCash" style="color:#1d4ed8;">৳০</div><div class="lbl">মোট নগদ</div></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+            <div class="emp-stat-box" style="background:#ecfdf5; border-color:#a7f3d0;">
+                <div class="val" id="mGrandTotal" style="color:#047857; font-size:15px;">৳ ০</div>
+                <div class="lbl">সর্বমোট পাওনা</div>
+            </div>
+            <div class="emp-stat-box" style="background:#eff6ff; border-color:#bfdbfe;">
+                <div class="val" id="mRemainingPay" style="color:#1d4ed8; font-size:15px;">৳ ০</div>
+                <div class="lbl">এই মাসে আর পাবে</div>
+            </div>
+        </div>
+        <div style="font-size:11px; text-align:left; background:#f8fafc; padding:8px; border-radius:8px; margin:12px 0; border:1px solid var(--border-color);">
+            <div>💰 <b>নির্ধারিত বেতন:</b> <span id="mEmpSalary">৳ 0</span></div>
+            <div>📞 <b>মোবাইল:</b> <span id="mEmpPhone">N/A</span></div>
+            <div>📅 <b>জয়েনিং ডেট:</b> <span id="mEmpJoinDate">N/A</span></div>
+        </div>
+        <button class="save-btn" style="padding:9px; margin-bottom:6px; background:linear-gradient(135deg,#0d9488,#0f172a);" onclick="generateEmployeePDF()">📄 PDF রিপোর্ট ডাউনলোড</button>
+        <button class="month-btn" style="width:100%; border:none; background:#e2e8f0;" onclick="closeEmpDetailModal()">বন্ধ করুন</button>
+    </div>
+</div>
+
+<!-- QR Only Modal (Modern Card) -->
+<div id="qrOnlyModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 320px;">
+        <div class="modal-title" style="color: var(--primary-dark); margin-bottom: 4px;" id="qrOnlyTitle">QR কোড</div>
+        <div style="font-size:12px; color:#64748b; margin-bottom:10px;" id="qrOnlyId">ID: -</div>
+        <div id="qrOnlyContainer" style="display: flex; justify-content: center; margin: 8px 0; padding: 12px; background: #fff; border-radius: 12px; border: 1px solid var(--border-color);"></div>
+        <button class="download-qr-btn" onclick="downloadQrCard()">⬇️ কার্ড হিসেবে ডাউনলোড করুন</button>
+        <button class="month-btn" style="width:100%; margin-top:8px; border:none; background:#e2e8f0;" onclick="closeQrOnlyModal()">বন্ধ করুন</button>
+    </div>
+</div>
+
+<!-- Delete Confirm -->
+<div id="deleteConfirmModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-icon">🗑️</div>
+        <div class="modal-title">এমপ্লয়ি মুছে ফেলবেন?</div>
+        <div class="modal-body" id="deleteConfirmBody">এই এমপ্লয়ির সমস্ত তথ্য মুছে যাবে। আপনি কি নিশ্চিত?</div>
+        <button class="modal-btn" onclick="confirmDeleteEmployee()">হ্যাঁ, মুছে ফেলুন</button>
+        <button class="modal-btn-secondary" onclick="closeDeleteConfirmModal()">বাতিল</button>
+    </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+    <div class="nav-item active" id="nav1" onclick="switchTab(1)"><span class="icon">💼</span><span>আয়-হাজিরা</span></div>
+    <div class="nav-item" id="nav2" onclick="switchTab(2)"><span class="icon">💸</span><span>ব্যয়</span></div>
+    <div class="nav-item" id="nav3" onclick="switchTab(3)"><span class="icon">💰</span><span>সঞ্চয়</span></div>
+    <div class="nav-item" id="nav4" onclick="switchTab(4)"><span class="icon">👥</span><span>এমপ্লয়িজ</span></div>
+    <div class="nav-item" id="nav5" onclick="switchTab(5)"><span class="icon">⚙️</span><span>সেটিংস</span></div>
 </div>
 
 <div id="toast" class="toast">হিসাব সফলভাবে সেভ হয়েছে!</div>
 
+<div id="alertModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-icon">🚨</div>
+        <div class="modal-title" id="modalTitle">বিজ্ঞপ্তি</div>
+        <div class="modal-body" id="modalBody">আপনার হিসাব আপডেট হয়েছে।</div>
+        <button class="modal-btn" onclick="closeModal()">ঠিক আছে, বুঝেছি</button>
+    </div>
+</div>
+
+<div id="printArea"></div>
+<canvas id="qrCardCanvas" style="display:none;"></canvas>
+
 <script>
     let today = new Date();
     let currentViewDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
     let selectedDateStr = formatDate(today);
+    let expSelectedDateStr = formatDate(today);
+    let savSelectedDateStr = formatDate(today);
+
     let currentStatus = 'PRESENT'; 
     let currentFilter = 'ALL';
-    let storeData = JSON.parse(localStorage.getItem('shopTrackerData')) || {};
+    
+    let allStoreData = JSON.parse(localStorage.getItem('shopTrackerData_v2')) || {};
+    let allExpenseData = JSON.parse(localStorage.getItem('shopExpenseData_v2')) || {};
+    let allSavingsData = JSON.parse(localStorage.getItem('shopSavingsData_v2')) || {};
+    let allSavingsTarget = JSON.parse(localStorage.getItem('shopSavingsTarget_v2')) || {};
+    
+    let currentUserRole = localStorage.getItem('appUserRole') || '';
+    
+    let userProfile = JSON.parse(localStorage.getItem('shopUserProfile')) || {
+        name: '', role: '', id: '', phone: '', pic: '', startDate: '', email: ''
+    };
+    if (!userProfile.startDate) userProfile.startDate = '';
+    if (!userProfile.email) userProfile.email = '';
 
-    const banglaMonths = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+    let ceoCredentials = JSON.parse(localStorage.getItem('ceoCredentials')) || {
+        username: 'admin',
+        password: '1234'
+    };
+
+    let employeesList = JSON.parse(localStorage.getItem('shopEmployeesList')) || [];
+    let pendingQrResets = JSON.parse(localStorage.getItem('pendingQrResets')) || []; // array of emp ids
+    let pendingAcceptEmpId = null;
+
+    let pendingEmpForCred = null;
+    let html5QrCode = null;
+    let currentViewingEmp = null;
+    let pendingDeleteIndex = -1;
+    let currentQrEmp = null;
+
+    function getCurrentUserId() {
+        return userProfile.id || 'CEO';
+    }
+
+    function getStoreData() {
+        const uid = getCurrentUserId();
+        if (!allStoreData[uid]) allStoreData[uid] = {};
+        return allStoreData[uid];
+    }
+    function getExpenseData() {
+        const uid = getCurrentUserId();
+        if (!allExpenseData[uid]) allExpenseData[uid] = {};
+        return allExpenseData[uid];
+    }
+    function getSavingsData() {
+        const uid = getCurrentUserId();
+        if (!allSavingsData[uid]) allSavingsData[uid] = {};
+        return allSavingsData[uid];
+    }
+    function getSavingsTarget() {
+        return allSavingsTarget[getCurrentUserId()] || 0;
+    }
+
+    const banglaMonthsFull = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+    const banglaMonthsShort = ["জানু", "ফেব্রু", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগষ্ট", "সেপ্টে", "অক্টো", "নভে", "ডিসেম্বর"];
+    const banglaDaysFull = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
 
     function toBanglaNum(num) {
         if (num === undefined || num === null || num === '') return '০';
@@ -407,18 +800,276 @@
     }
 
     function formatDate(d) {
-        let year = d.getFullYear();
-        let month = String(d.getMonth() + 1).padStart(2, '0');
-        let day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
+
+    function formatBanglaFullDate(dateStr) {
+        const parts = dateStr.split('-');
+        const y = parseInt(parts[0]);
+        const m = parseInt(parts[1]) - 1;
+        const d = parseInt(parts[2]);
+        const dateObj = new Date(y, m, d);
+        const dayName = banglaDaysFull[dateObj.getDay()];
+        const shortMonth = banglaMonthsShort[m];
+        const shortYear = toBanglaNum(y.toString().slice(-2));
+        return dayName + ', ' + toBanglaNum(d) + ' ' + shortMonth + ' ' + shortYear;
+    }
+
+    function getCurrentYearMonth() {
+        const y = currentViewDate.getFullYear();
+        const m = String(currentViewDate.getMonth() + 1).padStart(2, '0');
+        return y + '-' + m;
+    }
+
+    function getNextEmpId() {
+        let maxNum = 1000;
+        employeesList.forEach(e => {
+            const match = e.id.match(/EMP-(\d+)/i);
+            if (match) maxNum = Math.max(maxNum, parseInt(match[1]));
+        });
+        return 'EMP-' + (maxNum + 1);
+    }
+
+    function updateAutoIdPreview() {
+        const editIndex = parseInt(document.getElementById('editEmpIndex').value);
+        if (editIndex >= 0) {
+            document.getElementById('autoIdPreview').innerText = employeesList[editIndex].id;
+        } else {
+            document.getElementById('autoIdPreview').innerText = getNextEmpId();
+        }
+    }
+
+    /* ========== LOGIN ========== */
+    function checkAuth() {
+        if (!currentUserRole) {
+            document.getElementById('loginOverlay').style.display = 'flex';
+        } else {
+            document.getElementById('loginOverlay').style.display = 'none';
+            const nav4 = document.getElementById('nav4');
+            if (currentUserRole === 'EMPLOYEE') {
+                nav4.classList.add('hidden-nav');
+                document.getElementById('ceoCredCard').style.display = 'none';
+                document.getElementById('empCredCard').style.display = 'block';
+            } else {
+                nav4.classList.remove('hidden-nav');
+                document.getElementById('ceoCredCard').style.display = 'block';
+                document.getElementById('empCredCard').style.display = 'none';
+            }
+            updateSalaryNote();
+            updateMonthNavVisibility();
+        }
+    }
+
+    function updateMonthNavVisibility() {
+        const monthNav = document.getElementById('monthNavBar');
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab && (activeTab.id === 'tab4' || activeTab.id === 'tab5')) {
+            monthNav.classList.add('hidden-month');
+        } else {
+            monthNav.classList.remove('hidden-month');
+        }
+    }
+
+    function updateSalaryNote() {
+        const emp = employeesList.find(e => e.id === userProfile.id) || {};
+        const salary = emp.salary || 15000;
+        let startDateStr = emp.startDate || userProfile.startDate || '';
+        let dateText = 'জয়েনিং ডেট সেট হয়নি';
+        if (startDateStr) {
+            dateText = '📅 জয়েনিং: ' + formatBanglaFullDate(startDateStr) + ' থেকে';
+        } else if (currentUserRole === 'CEO') {
+            dateText = 'সিইও প্যানেল — সব এমপ্লয়ির হিসাব দেখুন';
+        }
+        document.getElementById('salaryNoteBox').innerHTML =
+            '<span class="note-icon">📌</span><span class="note-text">' + dateText +
+            ' <span style="opacity:0.85;">(নির্ধারিত বেতন: ৳' + toBanglaNum(salary) + ')</span></span>';
+        document.getElementById('limitInfoBox').innerHTML = '⚠️ সর্বোচ্চ বেতন বাজেটসীমা: ৳ ' + toBanglaNum(salary);
+    }
+
+    function switchLoginMode(mode) {
+        if (mode === 'EMP') {
+            document.getElementById('tabEmpLogin').classList.add('active');
+            document.getElementById('tabCeoLogin').classList.remove('active');
+            document.getElementById('empLoginBox').style.display = 'block';
+            document.getElementById('ceoLoginBox').style.display = 'none';
+        } else {
+            document.getElementById('tabCeoLogin').classList.add('active');
+            document.getElementById('tabEmpLogin').classList.remove('active');
+            document.getElementById('ceoLoginBox').style.display = 'block';
+            document.getElementById('empLoginBox').style.display = 'none';
+        }
+    }
+
+    function startQRScanner() {
+        document.getElementById('qrScannerModal').style.display = 'flex';
+        html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 220, height: 220 } },
+            (decodedText) => { handleScannedCode(decodedText.trim()); stopQRScanner(); }, () => {}
+        ).catch(() => { showToast('ক্যামেরা অ্যাক্সেস পাওয়া যায়নি। গ্যালারি থেকে চেষ্টা করুন।'); stopQRScanner(); });
+    }
+
+    function stopQRScanner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => { html5QrCode.clear(); html5QrCode = null; }).catch(() => {});
+        }
+        document.getElementById('qrScannerModal').style.display = 'none';
+    }
+
+    function scanQRFromFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const tempId = 'temp-qr-' + Date.now();
+        const tempDiv = document.createElement('div');
+        tempDiv.id = tempId; tempDiv.style.display = 'none';
+        document.body.appendChild(tempDiv);
+        const tempScanner = new Html5Qrcode(tempId);
+        tempScanner.scanFile(file, true)
+            .then(decodedText => { handleScannedCode(decodedText.trim()); tempScanner.clear(); document.body.removeChild(tempDiv); })
+            .catch(() => { showToast('QR কোড পড়া যায়নি। অন্য ছবি চেষ্টা করুন।'); try { document.body.removeChild(tempDiv); } catch(e){} });
+        event.target.value = '';
+    }
+
+    function handleScannedCode(code) {
+        const matched = employeesList.find(e => e.id.toLowerCase() === code.toLowerCase());
+        if (!matched) {
+            showModal('কোড পাওয়া যায়নি!', 'এই ইউনিক আইডি কোনো এমপ্লয়ির সাথে মিলে না। সিইওকে জানান।');
+            return;
+        }
+        if (matched.username && matched.password) {
+            showToast('✓ QR স্ক্যান সফল! এখন ইউজারনেম ও পাসওয়ার্ড দিয়ে লগইন করুন।');
+            document.getElementById('empLoginUser').focus();
+        } else {
+            pendingEmpForCred = matched;
+            document.getElementById('setUsername').value = '';
+            document.getElementById('setPassword').value = '';
+            document.getElementById('setPasswordConfirm').value = '';
+            document.getElementById('setCredModal').style.display = 'flex';
+        }
+    }
+
+    function loginEmployee() {
+        const username = document.getElementById('empLoginUser').value.trim();
+        const password = document.getElementById('empLoginPass').value.trim();
+        if (username && password) {
+            const matched = employeesList.find(e => e.username && e.username.toLowerCase() === username.toLowerCase() && e.password === password);
+            if (matched) {
+                userProfile.name = matched.name || '';
+                userProfile.role = matched.role || '';
+                userProfile.id = matched.id;
+                userProfile.phone = matched.phone || '';
+                userProfile.startDate = matched.startDate || '';
+                localStorage.setItem('shopUserProfile', JSON.stringify(userProfile));
+                currentUserRole = 'EMPLOYEE';
+                localStorage.setItem('appUserRole', 'EMPLOYEE');
+                renderProfileHeader(); checkAuth(); updateMonthHeader();
+                showToast('✓ সফলভাবে এমপ্লয়ি হিসেবে প্রবেশ করেছেন!');
+                return;
+            } else {
+                showModal('লগইন ব্যর্থ!', 'ইউজারনেম বা পাসওয়ার্ড সঠিক নয়।');
+                return;
+            }
+        }
+        showToast('ইউজারনেম ও পাসওয়ার্ড দিন অথবা QR স্ক্যান করুন!');
+    }
+
+    function saveFirstTimeCredentials() {
+        const u = document.getElementById('setUsername').value.trim();
+        const p = document.getElementById('setPassword').value.trim();
+        const pc = document.getElementById('setPasswordConfirm').value.trim();
+        if (!u || !p) return showToast('ইউজারনেম ও পাসওয়ার্ড দুটোই দিতে হবে!');
+        if (p !== pc) return showToast('পাসওয়ার্ড দুইবার একই লিখুন!');
+        const idx = employeesList.findIndex(e => e.id === pendingEmpForCred.id);
+        if (idx >= 0) {
+            employeesList[idx].username = u;
+            employeesList[idx].password = p;
+            // startDate সিইও সেট করে থাকলে রাখো, না থাকলে আজকের তারিখ
+            if (!employeesList[idx].startDate) {
+                employeesList[idx].startDate = formatDate(new Date());
+            }
+            localStorage.setItem('shopEmployeesList', JSON.stringify(employeesList));
+        }
+        userProfile.name = pendingEmpForCred.name || '';
+        userProfile.role = pendingEmpForCred.role || '';
+        userProfile.id = pendingEmpForCred.id;
+        userProfile.phone = pendingEmpForCred.phone || '';
+        userProfile.startDate = (idx >= 0 ? employeesList[idx].startDate : '') || formatDate(new Date());
+        localStorage.setItem('shopUserProfile', JSON.stringify(userProfile));
+        currentUserRole = 'EMPLOYEE';
+        localStorage.setItem('appUserRole', 'EMPLOYEE');
+        closeSetCredModal(); renderProfileHeader(); checkAuth(); updateMonthHeader();
+        showToast('✓ ইউজারনেম/পাসওয়ার্ড সেট হয়েছে ও লগইন সফল!');
+        pendingEmpForCred = null;
+    }
+
+    function closeSetCredModal() { document.getElementById('setCredModal').style.display = 'none'; pendingEmpForCred = null; }
+
+    function loginCEO() {
+        const u = document.getElementById('ceoUser').value.trim();
+        const p = document.getElementById('ceoPass').value.trim();
+        if (!u || !p) return showToast('ইউজারনেম ও পাসওয়ার্ড দিন!');
+        if (u === ceoCredentials.username && p === ceoCredentials.password) {
+            currentUserRole = 'CEO';
+            localStorage.setItem('appUserRole', 'CEO');
+            userProfile.name = userProfile.name || 'সিইও';
+            userProfile.role = 'Chief Executive Officer';
+            userProfile.id = 'CEO';
+            localStorage.setItem('shopUserProfile', JSON.stringify(userProfile));
+            renderProfileHeader(); checkAuth(); updateMonthHeader();
+            showToast('✓ সিইও প্যানেলে স্বাগতম!');
+        } else {
+            showModal('লগইন ব্যর্থ!', 'সঠিক ইউজারনেম ও পাসওয়ার্ড দিন।');
+        }
+    }
+
+    function changeCeoCredentials() {
+        const nu = document.getElementById('ceoNewUser').value.trim();
+        const np = document.getElementById('ceoNewPass').value.trim();
+        const npc = document.getElementById('ceoNewPassConfirm').value.trim();
+        if (!nu || !np) return showToast('ইউজারনেম ও পাসওয়ার্ড দুটোই দিন!');
+        if (np !== npc) return showToast('পাসওয়ার্ড দুইবার একই লিখুন!');
+        ceoCredentials.username = nu; ceoCredentials.password = np;
+        localStorage.setItem('ceoCredentials', JSON.stringify(ceoCredentials));
+        document.getElementById('ceoNewUser').value = ''; document.getElementById('ceoNewPass').value = ''; document.getElementById('ceoNewPassConfirm').value = '';
+        showToast('✓ সিইও ক্রেডেনশিয়াল আপডেট হয়েছে!');
+    }
+
+    function changeEmpCredentials() {
+        const nu = document.getElementById('empNewUser').value.trim();
+        const np = document.getElementById('empNewPass').value.trim();
+        const npc = document.getElementById('empNewPassConfirm').value.trim();
+        if (!nu || !np) return showToast('ইউজারনেম ও পাসওয়ার্ড দুটোই দিন!');
+        if (np !== npc) return showToast('পাসওয়ার্ড দুইবার একই লিখুন!');
+        const idx = employeesList.findIndex(e => e.id === userProfile.id);
+        if (idx >= 0) {
+            employeesList[idx].username = nu; employeesList[idx].password = np;
+            localStorage.setItem('shopEmployeesList', JSON.stringify(employeesList));
+            document.getElementById('empNewUser').value = ''; document.getElementById('empNewPass').value = ''; document.getElementById('empNewPassConfirm').value = '';
+            showToast('✓ আপনার ক্রেডেনশিয়াল আপডেট হয়েছে!');
+        } else showToast('এমপ্লয়ি রেকর্ড পাওয়া যায়নি!');
+    }
+
+    function logoutApp() { localStorage.removeItem('appUserRole'); currentUserRole = ''; location.reload(); }
+
+    function switchTab(tabIndex) {
+        if (tabIndex === 4 && currentUserRole !== 'CEO') { showToast('এই সেকশন শুধুমাত্র সিইও দেখতে পারেন!'); return; }
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab' + tabIndex).classList.add('active');
+        document.getElementById('nav' + tabIndex).classList.add('active');
+        updateMonthNavVisibility();
+        if (tabIndex === 2) { renderExpDateSlider(); loadExpDateData(); updateExpenseDashboard(); }
+        else if (tabIndex === 3) { renderSavDateSlider(); loadSavDateData(); updateSavingsDashboard(); }
+        else if (tabIndex === 4) { updateAutoIdPreview(); renderEmployeeList(); }
+        else if (tabIndex === 1) { renderDateSlider(); loadDateData(); updateDashboard(); }
     }
 
     function updateMonthHeader() {
-        const m = banglaMonths[currentViewDate.getMonth()];
-        const y = toBanglaNum(currentViewDate.getFullYear());
-        document.getElementById('monthDisplay').innerText = `${m} ${y}`;
-        renderDateSlider();
-        updateDashboard();
+        document.getElementById('monthDisplay').innerText = banglaMonthsFull[currentViewDate.getMonth()] + ' ' + toBanglaNum(currentViewDate.getFullYear());
+        renderDateSlider(); renderExpDateSlider(); renderSavDateSlider();
+        updateDashboard(); updateExpenseDashboard(); updateSavingsDashboard();
     }
 
     function changeMonth(offset) {
@@ -426,39 +1077,294 @@
         updateMonthHeader();
     }
 
+    /* ========== PROFILE ========== */
+    function renderProfileHeader() {
+        document.getElementById('displayProfileName').innerText = userProfile.name || 'নাম সেট করুন';
+        if (currentUserRole === 'CEO') {
+            document.getElementById('displayProfileRole').innerText = userProfile.role || 'Chief Executive Officer';
+        } else {
+            document.getElementById('displayProfileRole').innerText = (userProfile.role ? userProfile.role + ' | ID: ' : 'ID: ') + (userProfile.id || 'N/A');
+        }
+        document.getElementById('headerAvatar').src = userProfile.pic || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+    }
+
+    function openHeaderProfileEdit() {
+        document.getElementById('editHeaderNameInput').value = userProfile.name || '';
+        document.getElementById('editHeaderPhoneInput').value = userProfile.phone || '';
+        document.getElementById('editHeaderEmailInput').value = userProfile.email || '';
+        document.getElementById('editHeaderImgPreview').src = userProfile.pic || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+        document.getElementById('editPhoneGroup').style.display = 'block';
+        document.getElementById('editEmailGroup').style.display = (currentUserRole === 'CEO') ? 'block' : 'none';
+        document.getElementById('headerProfileModal').style.display = 'flex';
+    }
+    function closeHeaderProfileModal() { document.getElementById('headerProfileModal').style.display = 'none'; }
+
+    function uploadHeaderPic(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                userProfile.pic = e.target.result;
+                document.getElementById('editHeaderImgPreview').src = userProfile.pic;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function saveHeaderProfileChanges() {
+        const newName = document.getElementById('editHeaderNameInput').value.trim();
+        const newPhone = document.getElementById('editHeaderPhoneInput').value.trim();
+        const newEmail = document.getElementById('editHeaderEmailInput').value.trim();
+        if (newName) userProfile.name = newName;
+        userProfile.phone = newPhone;
+        if (currentUserRole === 'CEO') userProfile.email = newEmail;
+        if (currentUserRole === 'EMPLOYEE') {
+            const idx = employeesList.findIndex(e => e.id === userProfile.id);
+            if (idx >= 0) {
+                employeesList[idx].name = newName || employeesList[idx].name;
+                employeesList[idx].phone = newPhone || employeesList[idx].phone;
+                localStorage.setItem('shopEmployeesList', JSON.stringify(employeesList));
+            }
+        }
+        localStorage.setItem('shopUserProfile', JSON.stringify(userProfile));
+        renderProfileHeader(); closeHeaderProfileModal();
+        showToast('✓ প্রোফাইল আপডেট হয়েছে!');
+    }
+
+    /* ========== EMPLOYEE LIST ========== */
+    function renderEmployeeList() {
+        const container = document.getElementById('employeeListViewer');
+        container.innerHTML = '';
+        const filter = (document.getElementById('searchEmpViewer').value || '').trim().toLowerCase();
+
+        if (employeesList.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#64748b; font-size:13px;">কোনো এমপ্লয়ি নেই। উপরে নতুন এমপ্লয়ি যুক্ত করুন।</div>';
+            return;
+        }
+
+        employeesList.forEach((emp, index) => {
+            if (!filter || (emp.name || '').toLowerCase().includes(filter) || emp.id.toLowerCase().includes(filter)) {
+                const displayName = emp.name || 'নাম সেট হয়নি';
+                const hasRequest = pendingQrResets.indexOf(emp.id) >= 0;
+                const qrBtnHtml = hasRequest
+                    ? `<button class="qr-btn" style="background:#fef3c7;color:#b45309;border-color:#fde68a;" onclick="event.stopPropagation(); openAcceptQrRequest('${emp.id}', '${(displayName || '').replace(/'/g, "\\'")}')">📨 রিকোয়েস্ট</button>`
+                    : `<button class="qr-btn" onclick="event.stopPropagation(); showQrOnly('${emp.id}', '${(displayName || '').replace(/'/g, "\\'")}')">QR</button>`;
+                const card = document.createElement('div');
+                card.className = 'emp-list-card';
+                card.innerHTML = `
+                    <div class="emp-list-left">
+                        <div class="emp-list-name">👤 ${displayName}</div>
+                        <div class="emp-list-meta">💼 ${emp.role || 'কর্মচারী'}</div>
+                        ${emp.phone ? '<div class="emp-list-meta">📞 ' + emp.phone + '</div>' : ''}
+                        ${emp.startDate ? '<div class="emp-list-meta">📅 ' + formatBanglaFullDate(emp.startDate) + '</div>' : ''}
+                        <div class="emp-list-salary">৳ ${toBanglaNum(emp.salary || 0)}</div>
+                    </div>
+                    <div class="emp-list-right">
+                        <div class="emp-id-label">🆔 ${emp.id}</div>
+                        <div class="emp-action-btns">
+                            ${qrBtnHtml}
+                            <button onclick="event.stopPropagation(); editEmployee(${index});">✏️ এডিট</button>
+                            <button class="del-btn" onclick="event.stopPropagation(); openDeleteConfirm(${index});">🗑️ ডিলিট</button>
+                        </div>
+                    </div>
+                `;
+                card.onclick = () => showEmployeeDetail(emp);
+                container.appendChild(card);
+            }
+        });
+    }
+
+    function saveTab4Employee() {
+        const role = document.getElementById('t4EmpRole').value.trim();
+        const salary = parseFloat(document.getElementById('t4EmpSalary').value) || 0;
+        const phone = document.getElementById('t4EmpPhone').value.trim();
+        const joinDate = document.getElementById('t4EmpJoinDate').value || '';
+        const editIndex = parseInt(document.getElementById('editEmpIndex').value);
+        if (!role) return showToast('পদবী নির্বাচন করুন!');
+
+        if (editIndex >= 0) {
+            const old = employeesList[editIndex];
+            employeesList[editIndex] = {
+                name: old.name || '', id: old.id, role, salary,
+                phone: phone || old.phone || '',
+                startDate: joinDate || old.startDate || '',
+                username: old.username || '', password: old.password || ''
+            };
+            showToast('✓ এমপ্লয়ি তথ্য আপডেট হয়েছে!');
+        } else {
+            const newId = getNextEmpId();
+            employeesList.push({ name: '', id: newId, role, salary, phone, startDate: joinDate, username: '', password: '' });
+            showToast('✓ নতুন এমপ্লয়ি যুক্ত হয়েছে! আইডি: ' + newId);
+        }
+        localStorage.setItem('shopEmployeesList', JSON.stringify(employeesList));
+        resetEmpForm(); renderEmployeeList();
+    }
+
+    function editEmployee(index) {
+        const emp = employeesList[index];
+        document.getElementById('t4EmpRole').value = emp.role || '';
+        document.getElementById('t4EmpSalary').value = emp.salary || '';
+        document.getElementById('t4EmpPhone').value = emp.phone || '';
+        document.getElementById('t4EmpJoinDate').value = emp.startDate || '';
+        document.getElementById('editEmpIndex').value = index;
+        document.getElementById('empFormTitle').innerText = '✏️ এমপ্লয়ির তথ্য সংশোধন';
+        document.getElementById('cancelEditBtn').style.display = 'block';
+        updateAutoIdPreview();
+    }
+
+    function openDeleteConfirm(index) {
+        pendingDeleteIndex = index;
+        const emp = employeesList[index];
+        document.getElementById('deleteConfirmBody').innerText = '"' + (emp.name || emp.id) + '" এর সমস্ত তথ্য মুছে যাবে। আপনি কি নিশ্চিত?';
+        document.getElementById('deleteConfirmModal').style.display = 'flex';
+    }
+    function closeDeleteConfirmModal() { document.getElementById('deleteConfirmModal').style.display = 'none'; pendingDeleteIndex = -1; }
+    function confirmDeleteEmployee() {
+        if (pendingDeleteIndex >= 0) {
+            const removedId = employeesList[pendingDeleteIndex].id;
+            employeesList.splice(pendingDeleteIndex, 1);
+            pendingQrResets = pendingQrResets.filter(id => id !== removedId);
+            localStorage.setItem('shopEmployeesList', JSON.stringify(employeesList));
+            localStorage.setItem('pendingQrResets', JSON.stringify(pendingQrResets));
+            renderEmployeeList(); showToast('🗑️ এমপ্লয়ি মুছে ফেলা হয়েছে');
+        }
+        closeDeleteConfirmModal();
+    }
+
+    function resetEmpForm() {
+        document.getElementById('t4EmpRole').value = '';
+        document.getElementById('t4EmpSalary').value = '';
+        document.getElementById('t4EmpPhone').value = '';
+        document.getElementById('t4EmpJoinDate').value = '';
+        document.getElementById('editEmpIndex').value = '-1';
+        document.getElementById('empFormTitle').innerText = '➕ নতুন এমপ্লয়ি যুক্ত করুন';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        updateAutoIdPreview();
+    }
+
+    function showEmployeeDetail(emp) {
+        currentViewingEmp = emp;
+        document.getElementById('mEmpName').innerText = emp.name || 'নাম সেট হয়নি';
+        document.getElementById('mEmpRole').innerText = emp.role || 'কর্মচারী';
+        document.getElementById('mEmpId').innerText = 'ID: ' + emp.id;
+        document.getElementById('mEmpSalary').innerText = '৳ ' + toBanglaNum(emp.salary || 0);
+        document.getElementById('mEmpPhone').innerText = emp.phone || 'N/A';
+        document.getElementById('mEmpJoinDate').innerText = emp.startDate ? formatBanglaFullDate(emp.startDate) : 'N/A';
+
+        const empData = allStoreData[emp.id] || {};
+        const ym = getCurrentYearMonth();
+        let present = 0, absent = 0, holiday = 0, totalDaily = 0, totalCash = 0;
+        Object.keys(empData).forEach(date => {
+            if (date.startsWith(ym)) {
+                const item = empData[date];
+                if (item.status === 'PRESENT') present++;
+                if (item.status === 'ABSENT') absent++;
+                if (item.status === 'HOLIDAY') holiday++;
+                totalDaily += (item.daily || 0);
+                totalCash += (item.cash || 0);
+            }
+        });
+        const grand = totalDaily + totalCash;
+        const salary = emp.salary || 0;
+        const remaining = salary - grand;
+        document.getElementById('mPresent').innerText = toBanglaNum(present);
+        document.getElementById('mAbsent').innerText = toBanglaNum(absent);
+        document.getElementById('mHoliday').innerText = toBanglaNum(holiday);
+        document.getElementById('mTotalDaily').innerText = '৳' + toBanglaNum(totalDaily);
+        document.getElementById('mTotalCash').innerText = '৳' + toBanglaNum(totalCash);
+        document.getElementById('mGrandTotal').innerText = '৳ ' + toBanglaNum(grand);
+        const remEl = document.getElementById('mRemainingPay');
+        if (remaining >= 0) {
+            remEl.style.color = '#1d4ed8';
+            remEl.innerText = '৳ ' + toBanglaNum(remaining);
+        } else {
+            remEl.style.color = '#dc2626';
+            remEl.innerText = '-৳ ' + toBanglaNum(Math.abs(remaining));
+        }
+        document.getElementById('empDetailModal').style.display = 'flex';
+    }
+    function closeEmpDetailModal() { document.getElementById('empDetailModal').style.display = 'none'; currentViewingEmp = null; }
+
+    function showQrOnly(empId, empName) {
+        currentQrEmp = { id: empId, name: empName || empId };
+        document.getElementById('qrOnlyTitle').innerText = empName || 'এমপ্লয়ি';
+        document.getElementById('qrOnlyId').innerText = 'ID: ' + empId;
+        const container = document.getElementById('qrOnlyContainer');
+        container.innerHTML = '';
+        new QRCode(container, {
+            text: empId,
+            width: 160,
+            height: 160,
+            colorDark: "#0f172a",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        document.getElementById('qrOnlyModal').style.display = 'flex';
+    }
+    function closeQrOnlyModal() { document.getElementById('qrOnlyModal').style.display = 'none'; currentQrEmp = null; }
+
+    function downloadQrCard() {
+        if (!currentQrEmp) return;
+        const container = document.getElementById('qrOnlyContainer');
+        const canvasOrImg = container.querySelector('canvas') || container.querySelector('img');
+        if (!canvasOrImg) { showToast('QR কোড তৈরি হয়নি!'); return; }
+
+        const cardCanvas = document.getElementById('qrCardCanvas');
+        const ctx = cardCanvas.getContext('2d');
+        const W = 360, H = 480;
+        cardCanvas.width = W; cardCanvas.height = H;
+
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+        const grad = ctx.createLinearGradient(0, 0, W, 0);
+        grad.addColorStop(0, '#0d9488'); grad.addColorStop(1, '#0f172a');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, W, 70);
+
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Segoe UI, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('আমার হিসাব', W / 2, 42);
+
+        ctx.fillStyle = '#0f172a'; ctx.font = 'bold 20px Segoe UI, sans-serif';
+        ctx.fillText(currentQrEmp.name || 'এমপ্লয়ি', W / 2, 110);
+
+        ctx.fillStyle = '#0d9488'; ctx.font = 'bold 16px Segoe UI, sans-serif';
+        ctx.fillText(currentQrEmp.id, W / 2, 140);
+
+        const qrSize = 200;
+        ctx.drawImage(canvasOrImg, (W - qrSize) / 2, 170, qrSize, qrSize);
+
+        ctx.fillStyle = '#64748b'; ctx.font = '12px Segoe UI, sans-serif';
+        ctx.fillText('স্ক্যান করে লগইন করুন', W / 2, 410);
+        ctx.fillStyle = '#94a3b8'; ctx.font = '11px Segoe UI, sans-serif';
+        ctx.fillText('আমার হিসাব অ্যাপ', W / 2, 440);
+
+        const link = document.createElement('a');
+        link.href = cardCanvas.toDataURL('image/png');
+        link.download = 'employee_card_' + currentQrEmp.id + '.png';
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        showToast('⬇️ কার্ড ডাউনলোড হয়েছে!');
+    }
+
+    /* ========== TAB 1: আয়-হাজিরা ========== */
     function renderDateSlider() {
         const slider = document.getElementById('dateSlider');
         slider.innerHTML = '';
         const year = currentViewDate.getFullYear();
         const month = currentViewDate.getMonth();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-
         let activePillEl = null;
-
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
             const pill = document.createElement('div');
             const isActive = (selectedDateStr === dateStr);
-            
             pill.className = 'date-pill' + (isActive ? ' active' : '');
-            pill.innerText = `${toBanglaNum(d)} তারিখ`;
-            pill.onclick = () => selectDate(dateStr, pill);
-            
+            pill.innerText = toBanglaNum(d) + ' তারিখ';
+            pill.onclick = () => selectDate(dateStr);
             slider.appendChild(pill);
-
-            if (isActive) {
-                activePillEl = pill;
-            }
+            if (isActive) activePillEl = pill;
         }
-
-        if (activePillEl) {
-            setTimeout(() => {
-                activePillEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }, 100);
-        }
+        if (activePillEl) setTimeout(() => activePillEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 80);
     }
 
-    function selectDate(dateStr, element) {
+    function selectDate(dateStr) {
         selectedDateStr = dateStr;
         renderDateSlider();
         loadDateData();
@@ -485,24 +1391,33 @@
         const toast = document.getElementById("toast");
         toast.innerText = msg;
         toast.className = "toast show";
-        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 2000);
+        setTimeout(() => { toast.className = "toast"; }, 2200);
     }
+
+    function showModal(title, message) {
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('modalBody').innerText = message;
+        document.getElementById('alertModal').style.display = 'flex';
+    }
+    function closeModal() { document.getElementById('alertModal').style.display = 'none'; }
 
     function saveData() {
         if (!selectedDateStr) return showToast('তারিখ নির্বাচন করুন!');
-
         const daily = parseFloat(document.getElementById('dailyInput').value) || 0;
         const cash = parseFloat(document.getElementById('cashInput').value) || 0;
         const note = document.getElementById('noteInput').value.trim();
 
+        const storeData = getStoreData();
         storeData[selectedDateStr] = { status: currentStatus, daily: daily, cash: cash, note: note };
+        allStoreData[getCurrentUserId()] = storeData;
+        localStorage.setItem('shopTrackerData_v2', JSON.stringify(allStoreData));
 
-        localStorage.setItem('shopTrackerData', JSON.stringify(storeData));
         showToast('✓ হিসাব সফলভাবে সেভ হয়েছে!');
         updateDashboard();
     }
 
     function loadDateData() {
+        const storeData = getStoreData();
         const data = storeData[selectedDateStr] || { status: 'PRESENT', daily: 200, cash: '', note: '' };
         setStatus(data.status);
         document.getElementById('dailyInput').value = (data.daily !== undefined) ? data.daily : 200;
@@ -513,95 +1428,518 @@
     function renderHistory() {
         const historyContainer = document.getElementById('historyList');
         historyContainer.innerHTML = '';
-        
-        let rawSearch = document.getElementById('searchInput').value.trim();
-        let searchEng = toEnglishNum(rawSearch);
-        let cleanSearch = searchEng.replace(/^0+/, '');
 
-        const currentYearMonth = `${currentViewDate.getFullYear()}-${String(currentViewDate.getMonth() + 1).padStart(2, '0')}`;
+        const rawSearch = (document.getElementById('searchInput').value || '').trim();
+        const searchEng = toEnglishNum(rawSearch);
+        const cleanSearch = searchEng.replace(/^0+/, '');
+        const ym = getCurrentYearMonth();
+        const storeData = getStoreData();
 
-        Object.keys(storeData).sort().reverse().forEach(date => {
-            if (date.startsWith(currentYearMonth)) {
-                const dayPart = date.split('-')[2]; 
-                const cleanDayPart = dayPart.replace(/^0+/, '');
+        const dates = Object.keys(storeData).filter(d => d.startsWith(ym)).sort().reverse();
 
-                const matchesSearch = !cleanSearch || dayPart.includes(searchEng) || cleanDayPart === cleanSearch;
+        if (dates.length === 0) {
+            historyContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px;">এই মাসে কোনো হিসাব নেই</div>';
+            return;
+        }
 
-                if (matchesSearch) {
-                    const item = storeData[date];
+        dates.forEach(date => {
+            const dayPart = date.split('-')[2];
+            const cleanDayPart = dayPart.replace(/^0+/, '');
+            const matchesSearch = !cleanSearch || dayPart.includes(searchEng) || cleanDayPart === cleanSearch;
+            if (!matchesSearch) return;
 
-                    if (currentFilter === 'PRESENT' && item.status !== 'PRESENT') return;
-                    if (currentFilter === 'ABSENT' && item.status !== 'ABSENT') return;
-                    if (currentFilter === 'CASH' && (!item.cash || item.cash <= 0)) return;
+            const item = storeData[date];
+            if (currentFilter === 'PRESENT' && item.status !== 'PRESENT') return;
+            if (currentFilter === 'ABSENT' && item.status !== 'ABSENT') return;
+            if (currentFilter === 'CASH' && (!item.cash || item.cash <= 0)) return;
 
-                    const total = (item.daily || 0) + (item.cash || 0);
-                    
-                    let badgeClass = '#64748b';
-                    let badgeText = '⚪ নেই';
-                    if(item.status === 'PRESENT') { badgeClass = '#10b981'; badgeText = '🟢 উপস্থিত'; }
-                    if(item.status === 'ABSENT') { badgeClass = '#ef4444'; badgeText = '🔴 অনুপস্থিত'; }
-                    if(item.status === 'HOLIDAY') { badgeClass = '#f59e0b'; badgeText = '🟡 ছুটি'; }
+            const total = (item.daily || 0) + (item.cash || 0);
+            let badgeClass = '#64748b', badgeText = '⚪ নেই';
+            if (item.status === 'PRESENT') { badgeClass = '#10b981'; badgeText = '🟢 উপস্থিত'; }
+            if (item.status === 'ABSENT') { badgeClass = '#ef4444'; badgeText = '🔴 অনুপস্থিত'; }
+            if (item.status === 'HOLIDAY') { badgeClass = '#f59e0b'; badgeText = '🟡 ছুটি'; }
 
-                    const noteHtml = item.note ? `<div class="card-note">📝 ${item.note}</div>` : '';
-
-                    const parts = date.split('-');
-                    const bnFormattedDate = `${toBanglaNum(parts[2])}-${toBanglaNum(parts[1])}-${toBanglaNum(parts[0])}`;
-
-                    const card = document.createElement('div');
-                    card.className = 'history-card';
-                    card.innerHTML = `
-                        <div class="card-left">
-                            <div class="card-date">${bnFormattedDate}</div>
-                            <div class="card-status" style="color: ${badgeClass};">${badgeText}</div>
-                            ${noteHtml}
-                        </div>
-                        <div class="card-right">
-                            <div class="card-amount">৳ ${toBanglaNum(total)}</div>
-                            <div class="card-sub">দৈনিক: ৳${toBanglaNum(item.daily || 0)} | নগদ: ৳${toBanglaNum(item.cash || 0)}</div>
-                        </div>
-                    `;
-                    card.onclick = () => selectDate(date);
-                    historyContainer.appendChild(card);
-                }
-            }
+            const noteHtml = item.note ? '<div class="card-note">📝 ' + item.note + '</div>' : '';
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `
+                <div class="card-left">
+                    <div class="card-date">${formatBanglaFullDate(date)}</div>
+                    <div class="card-status" style="color:${badgeClass}">${badgeText}</div>
+                    ${noteHtml}
+                </div>
+                <div class="card-right">
+                    <div class="card-amount">৳ ${toBanglaNum(total)}</div>
+                    <div class="card-sub">দৈনিক: ৳${toBanglaNum(item.daily || 0)} | নগদ: ৳${toBanglaNum(item.cash || 0)}</div>
+                </div>
+            `;
+            card.onclick = () => selectDate(date);
+            historyContainer.appendChild(card);
         });
     }
 
     function updateDashboard() {
-        let present = 0, absent = 0, totalDaily = 0, totalCash = 0;
-        const currentYearMonth = `${currentViewDate.getFullYear()}-${String(currentViewDate.getMonth() + 1).padStart(2, '0')}`;
+        let present = 0, absent = 0, holiday = 0, totalDaily = 0, totalCash = 0;
+        const ym = getCurrentYearMonth();
+        const storeData = getStoreData();
+        const expenseData = getExpenseData();
+        const savingsData = getSavingsData();
 
         Object.keys(storeData).forEach(date => {
-            if (date.startsWith(currentYearMonth)) {
+            if (date.startsWith(ym)) {
                 const item = storeData[date];
                 if (item.status === 'PRESENT') present++;
                 if (item.status === 'ABSENT') absent++;
+                if (item.status === 'HOLIDAY') holiday++;
                 totalDaily += (item.daily || 0);
                 totalCash += (item.cash || 0);
             }
         });
 
+        const grandTotal = totalDaily + totalCash;
+        let monthExpense = 0;
+        Object.keys(expenseData).forEach(date => {
+            if (date.startsWith(ym)) {
+                const item = expenseData[date];
+                monthExpense += (item.travel || 0) + (item.food || 0) + (item.extra || 0);
+            }
+        });
+        let monthSavings = 0;
+        Object.keys(savingsData).forEach(date => {
+            if (date.startsWith(ym)) monthSavings += (savingsData[date].savings || 0);
+        });
+        const netCash = grandTotal - (monthExpense + monthSavings);
+
         document.getElementById('totalPresent').innerText = toBanglaNum(present) + ' দিন';
         document.getElementById('totalAbsent').innerText = toBanglaNum(absent) + ' দিন';
+        document.getElementById('totalHoliday').innerText = toBanglaNum(holiday) + ' দিন';
         document.getElementById('totalDaily').innerText = '৳ ' + toBanglaNum(totalDaily);
         document.getElementById('totalCash').innerText = '৳ ' + toBanglaNum(totalCash);
-        document.getElementById('grandTotal').innerText = '৳ ' + toBanglaNum(totalDaily + totalCash);
+        document.getElementById('grandTotal').innerText = '৳ ' + toBanglaNum(grandTotal);
+        document.getElementById('netCashInHand').innerText = '৳ ' + toBanglaNum(netCash);
 
+        const salaryLimit = (employeesList.find(e => e.id === userProfile.id) || {}).salary || 15000;
+        if (grandTotal > salaryLimit) {
+            showModal('বেতন সীমা অতিক্রম করেছে!', 'আপনার মোট পাওনা ৳' + toBanglaNum(grandTotal) + ', যা নির্ধারিত ৳' + toBanglaNum(salaryLimit) + ' টাকার সীমা ছাড়িয়ে গেছে।');
+        }
         renderHistory();
     }
 
-    updateMonthHeader();
-    loadDateData();
+    /* ========== TAB 2: ব্যয় ========== */
+    function renderExpDateSlider() {
+        const slider = document.getElementById('expDateSlider');
+        slider.innerHTML = '';
+        const year = currentViewDate.getFullYear();
+        const month = currentViewDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let activePillEl = null;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            const pill = document.createElement('div');
+            const isActive = (expSelectedDateStr === dateStr);
+            pill.className = 'date-pill' + (isActive ? ' active' : '');
+            pill.innerText = toBanglaNum(d) + ' তারিখ';
+            pill.onclick = () => selectExpDate(dateStr);
+            slider.appendChild(pill);
+            if (isActive) activePillEl = pill;
+        }
+        if (activePillEl) setTimeout(() => activePillEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 80);
+    }
 
-    // Service Worker Registration for PWA Installation
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('Service Worker Registered'))
-                .catch(err => console.log('Service Worker Error', err));
+    function selectExpDate(dateStr) {
+        expSelectedDateStr = dateStr;
+        renderExpDateSlider();
+        loadExpDateData();
+    }
+
+    function saveExpenseData() {
+        if (!expSelectedDateStr) return showToast('তারিখ নির্বাচন করুন!');
+        const travel = parseFloat(document.getElementById('travelExpense').value) || 0;
+        const food = parseFloat(document.getElementById('foodExpense').value) || 0;
+        const extra = parseFloat(document.getElementById('extraExpense').value) || 0;
+        const note = document.getElementById('expNoteInput').value.trim();
+
+        const expenseData = getExpenseData();
+        expenseData[expSelectedDateStr] = { travel, food, extra, note };
+        allExpenseData[getCurrentUserId()] = expenseData;
+        localStorage.setItem('shopExpenseData_v2', JSON.stringify(allExpenseData));
+
+        showToast('✓ ব্যয় সফলভাবে সেভ হয়েছে!');
+        updateExpenseDashboard();
+        updateDashboard();
+    }
+
+    function loadExpDateData() {
+        const expenseData = getExpenseData();
+        const data = expenseData[expSelectedDateStr] || { travel: '', food: '', extra: '', note: '' };
+        document.getElementById('travelExpense').value = data.travel || '';
+        document.getElementById('foodExpense').value = data.food || '';
+        document.getElementById('extraExpense').value = data.extra || '';
+        document.getElementById('expNoteInput').value = data.note || '';
+    }
+
+    function updateExpenseDashboard() {
+        let totalRegular = 0, totalExtra = 0;
+        const ym = getCurrentYearMonth();
+        const expenseData = getExpenseData();
+        Object.keys(expenseData).forEach(date => {
+            if (date.startsWith(ym)) {
+                const item = expenseData[date];
+                totalRegular += (item.travel || 0) + (item.food || 0);
+                totalExtra += (item.extra || 0);
+            }
+        });
+        document.getElementById('totalRegularExp').innerText = '৳ ' + toBanglaNum(totalRegular);
+        document.getElementById('totalExtraExpense').innerText = '৳ ' + toBanglaNum(totalExtra);
+        document.getElementById('totalExpense').innerText = '৳ ' + toBanglaNum(totalRegular + totalExtra);
+        renderExpHistory();
+    }
+
+    function renderExpHistory() {
+        const historyContainer = document.getElementById('expHistoryList');
+        historyContainer.innerHTML = '';
+        const ym = getCurrentYearMonth();
+        const expenseData = getExpenseData();
+        const dates = Object.keys(expenseData).filter(d => d.startsWith(ym)).sort().reverse();
+
+        if (dates.length === 0) {
+            historyContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px;">এই মাসে কোনো ব্যয় নেই</div>';
+            return;
+        }
+
+        dates.forEach(date => {
+            const item = expenseData[date];
+            const dayExpense = (item.travel || 0) + (item.food || 0) + (item.extra || 0);
+            if (dayExpense <= 0 && !item.note) return;
+
+            const noteHtml = item.note ? '<div class="card-note">📝 ' + item.note + '</div>' : '';
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `
+                <div class="card-left">
+                    <div class="card-date">${formatBanglaFullDate(date)}</div>
+                    <div class="card-sub" style="color:#64748b;">🚌 যাতায়াত: ৳${toBanglaNum(item.travel || 0)} | 🍚 খাবার: ৳${toBanglaNum(item.food || 0)}${item.extra > 0 ? ' | ⚡ বাড়াত: ৳' + toBanglaNum(item.extra) : ''}</div>
+                    ${noteHtml}
+                </div>
+                <div class="card-right">
+                    <div class="card-amount" style="color:#ef4444;">মোট খরচ: ৳${toBanglaNum(dayExpense)}</div>
+                </div>
+            `;
+            card.onclick = () => selectExpDate(date);
+            historyContainer.appendChild(card);
         });
     }
-</script>
 
+    /* ========== TAB 3: সঞ্চয় ========== */
+    function renderSavDateSlider() {
+        const slider = document.getElementById('savDateSlider');
+        slider.innerHTML = '';
+        const year = currentViewDate.getFullYear();
+        const month = currentViewDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let activePillEl = null;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+            const pill = document.createElement('div');
+            const isActive = (savSelectedDateStr === dateStr);
+            pill.className = 'date-pill' + (isActive ? ' active' : '');
+            pill.innerText = toBanglaNum(d) + ' তারিখ';
+            pill.onclick = () => selectSavDate(dateStr);
+            slider.appendChild(pill);
+            if (isActive) activePillEl = pill;
+        }
+        if (activePillEl) setTimeout(() => activePillEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 80);
+    }
+
+    function selectSavDate(dateStr) {
+        savSelectedDateStr = dateStr;
+        renderSavDateSlider();
+        loadSavDateData();
+    }
+
+    function saveTargetGoal() {
+        const val = parseFloat(document.getElementById('targetGoalInput').value) || 0;
+        allSavingsTarget[getCurrentUserId()] = val;
+        localStorage.setItem('shopSavingsTarget_v2', JSON.stringify(allSavingsTarget));
+        showToast('🎯 সঞ্চয়ের টার্গেট সেট করা হয়েছে!');
+        updateSavingsDashboard();
+    }
+
+    function saveSavingsData() {
+        if (!savSelectedDateStr) return showToast('তারিখ নির্বাচন করুন!');
+        const savings = parseFloat(document.getElementById('dailySavingsInput').value) || 0;
+        const note = document.getElementById('savNoteInput').value.trim();
+
+        const savingsData = getSavingsData();
+        savingsData[savSelectedDateStr] = { savings, note };
+        allSavingsData[getCurrentUserId()] = savingsData;
+        localStorage.setItem('shopSavingsData_v2', JSON.stringify(allSavingsData));
+
+        showToast('✓ সঞ্চয় সফলভাবে সেভ হয়েছে!');
+        updateSavingsDashboard();
+        updateDashboard();
+    }
+
+    function loadSavDateData() {
+        const savingsData = getSavingsData();
+        const data = savingsData[savSelectedDateStr] || { savings: '', note: '' };
+        document.getElementById('dailySavingsInput').value = data.savings || '';
+        document.getElementById('savNoteInput').value = data.note || '';
+        const target = getSavingsTarget();
+        if (target > 0) document.getElementById('targetGoalInput').value = target;
+    }
+
+    function updateSavingsDashboard() {
+        let total = 0;
+        const savingsData = getSavingsData();
+        Object.keys(savingsData).forEach(date => { total += (savingsData[date].savings || 0); });
+
+        const target = getSavingsTarget();
+        let percentage = 0, deficit = 0;
+        if (target > 0) {
+            percentage = Math.min(100, Math.round((total / target) * 100));
+            deficit = Math.max(0, target - total);
+        }
+        document.getElementById('targetPercent').innerText = toBanglaNum(percentage) + '% পূরণ';
+        document.getElementById('progressFill').style.width = percentage + '%';
+        document.getElementById('savAccumulated').innerText = '৳ ' + toBanglaNum(total);
+        document.getElementById('targetDeficit').innerText = '৳ ' + toBanglaNum(deficit);
+        renderSavHistory();
+    }
+
+    function renderSavHistory() {
+        const historyContainer = document.getElementById('savHistoryList');
+        historyContainer.innerHTML = '';
+        const ym = getCurrentYearMonth();
+        const savingsData = getSavingsData();
+        const dates = Object.keys(savingsData).filter(d => d.startsWith(ym)).sort().reverse();
+
+        if (dates.length === 0) {
+            historyContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px;">এই মাসে কোনো সঞ্চয় নেই</div>';
+            return;
+        }
+
+        dates.forEach(date => {
+            const item = savingsData[date];
+            if ((item.savings || 0) <= 0 && !item.note) return;
+            const noteHtml = item.note ? '<div class="card-note">📝 ' + item.note + '</div>' : '';
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `
+                <div class="card-left">
+                    <div class="card-date">${formatBanglaFullDate(date)}</div>
+                    ${noteHtml}
+                </div>
+                <div class="card-right">
+                    <div class="card-amount" style="color:#047857;">💰 সঞ্চয়: ৳${toBanglaNum(item.savings || 0)}</div>
+                </div>
+            `;
+            card.onclick = () => selectSavDate(date);
+            historyContainer.appendChild(card);
+        });
+    }
+
+    /* ========== PDF & BACKUP ========== */
+    function generatePDFReport() {
+        const printContainer = document.getElementById('printArea');
+        const ym = getCurrentYearMonth();
+        const mName = banglaMonthsFull[currentViewDate.getMonth()];
+        const yNum = toBanglaNum(currentViewDate.getFullYear());
+        const storeData = getStoreData();
+        let present = 0, absent = 0, holiday = 0, totalDaily = 0, totalCash = 0, rowsHtml = '';
+
+        Object.keys(storeData).sort().forEach(date => {
+            if (!date.startsWith(ym)) return;
+            const item = storeData[date];
+            if (item.status === 'PRESENT') present++;
+            if (item.status === 'ABSENT') absent++;
+            if (item.status === 'HOLIDAY') holiday++;
+            const d = item.daily || 0, c = item.cash || 0;
+            totalDaily += d; totalCash += c;
+            let st = 'নেই';
+            if (item.status === 'PRESENT') st = 'উপস্থিত';
+            if (item.status === 'ABSENT') st = 'অনুপস্থিত';
+            if (item.status === 'HOLIDAY') st = 'ছুটি';
+            rowsHtml += `<tr><td>${formatBanglaFullDate(date)}</td><td>${st}</td><td>৳ ${toBanglaNum(d)}</td><td>৳ ${toBanglaNum(c)}</td><td>৳ ${toBanglaNum(d+c)}</td><td>${item.note || '-'}</td></tr>`;
+        });
+
+        printContainer.innerHTML = `
+            <div class="pdf-modern-header"><h2>আমার হিসাব - মাসিক রিপোর্ট</h2>
+            <p><b>মাস:</b> ${mName} ${yNum} &nbsp;|&nbsp; <b>নাম:</b> ${userProfile.name || 'N/A'} &nbsp;|&nbsp; <b>আইডি:</b> ${userProfile.id || 'N/A'}</p></div>
+            <div class="pdf-summary-modern">
+                <div class="pdf-box"><h4>📊 উপস্থিতি সামারি</h4>উপস্থিত: <b>${toBanglaNum(present)}</b> দিন<br>অনুপস্থিত: <b>${toBanglaNum(absent)}</b> দিন<br>ছুটি: <b>${toBanglaNum(holiday)}</b> দিন</div>
+                <div class="pdf-box"><h4>💰 আর্থিক সামারি</h4>দৈনিক পাওনা: ৳${toBanglaNum(totalDaily)}<br>নগদ গ্রহণ: ৳${toBanglaNum(totalCash)}<br><b style="color:#0d9488;font-size:14px;">সর্বমোট: ৳${toBanglaNum(totalDaily+totalCash)}</b></div>
+            </div>
+            <table class="pdf-table-modern"><thead><tr><th>তারিখ</th><th>স্ট্যাটাস</th><th>দৈনিক মজুরি</th><th>নগদ গ্রহণ</th><th>মোট পাওনা</th><th>নোট</th></tr></thead>
+            <tbody>${rowsHtml || '<tr><td colspan="6">চলতি মাসে কোনো হিসাব তথ্য নেই</td></tr>'}</tbody></table>
+            <div class="pdf-footer">তৈরি করা হয়েছে: ${formatBanglaFullDate(formatDate(new Date()))} | আমার হিসাব অ্যাপ</div>`;
+        window.print();
+    }
+
+    function generateEmployeePDF() {
+        if (!currentViewingEmp) return;
+        const emp = currentViewingEmp;
+        const printContainer = document.getElementById('printArea');
+        const ym = getCurrentYearMonth();
+        const mName = banglaMonthsFull[currentViewDate.getMonth()];
+        const yNum = toBanglaNum(currentViewDate.getFullYear());
+        const empData = allStoreData[emp.id] || {};
+        let present = 0, absent = 0, holiday = 0, totalDaily = 0, totalCash = 0, rowsHtml = '';
+
+        Object.keys(empData).sort().forEach(date => {
+            if (!date.startsWith(ym)) return;
+            const item = empData[date];
+            if (item.status === 'PRESENT') present++;
+            if (item.status === 'ABSENT') absent++;
+            if (item.status === 'HOLIDAY') holiday++;
+            const d = item.daily || 0, c = item.cash || 0;
+            totalDaily += d; totalCash += c;
+            let st = 'নেই';
+            if (item.status === 'PRESENT') st = 'উপস্থিত';
+            if (item.status === 'ABSENT') st = 'অনুপস্থিত';
+            if (item.status === 'HOLIDAY') st = 'ছুটি';
+            rowsHtml += `<tr><td>${formatBanglaFullDate(date)}</td><td>${st}</td><td>৳ ${toBanglaNum(d)}</td><td>৳ ${toBanglaNum(c)}</td><td>৳ ${toBanglaNum(d+c)}</td><td>${item.note || '-'}</td></tr>`;
+        });
+
+        printContainer.innerHTML = `
+            <div class="pdf-modern-header"><h2>এমপ্লয়ি মাসিক রিপোর্ট</h2>
+            <p><b>নাম:</b> ${emp.name || 'N/A'} &nbsp;|&nbsp; <b>আইডি:</b> ${emp.id} &nbsp;|&nbsp; <b>মাস:</b> ${mName} ${yNum}</p></div>
+            <div class="pdf-summary-modern">
+                <div class="pdf-box"><h4>📊 উপস্থিতি সামারি</h4>উপস্থিত: <b>${toBanglaNum(present)}</b> দিন<br>অনুপস্থিত: <b>${toBanglaNum(absent)}</b> দিন<br>ছুটি: <b>${toBanglaNum(holiday)}</b> দিন</div>
+                <div class="pdf-box"><h4>💰 আর্থিক সামারি</h4>দৈনিক পাওনা: ৳${toBanglaNum(totalDaily)}<br>নগদ গ্রহণ: ৳${toBanglaNum(totalCash)}<br><b style="color:#0d9488;font-size:14px;">সর্বমোট: ৳${toBanglaNum(totalDaily+totalCash)}</b></div>
+            </div>
+            <table class="pdf-table-modern"><thead><tr><th>তারিখ</th><th>স্ট্যাটাস</th><th>দৈনিক মজুরি</th><th>নগদ গ্রহণ</th><th>মোট পাওনা</th><th>নোট</th></tr></thead>
+            <tbody>${rowsHtml || '<tr><td colspan="6">চলতি মাসে কোনো হিসাব তথ্য নেই</td></tr>'}</tbody></table>
+            <div class="pdf-footer">তৈরি করা হয়েছে: ${formatBanglaFullDate(formatDate(new Date()))} | আমার হিসাব অ্যাপ | সিইও প্যানেল</div>`;
+        window.print();
+    }
+
+    function exportDataJSON() {
+        const fullBackup = { allStoreData, allExpenseData, allSavingsData, allSavingsTarget, userProfile, employeesList, ceoCredentials, version: 2 };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup, null, 2));
+        const a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", "amar_hisab_backup_" + formatDate(new Date()) + ".json");
+        document.body.appendChild(a); a.click(); a.remove();
+        showToast('📥 ব্যাকআপ ফাইল ডাউনলোড হয়েছে!');
+    }
+
+    function importDataJSON(event) {
+        const fr = new FileReader();
+        fr.onload = function(e) {
+            try {
+                const parsed = JSON.parse(e.target.result);
+                if (parsed.version === 2) {
+                    if (parsed.allStoreData) localStorage.setItem('shopTrackerData_v2', JSON.stringify(parsed.allStoreData));
+                    if (parsed.allExpenseData) localStorage.setItem('shopExpenseData_v2', JSON.stringify(parsed.allExpenseData));
+                    if (parsed.allSavingsData) localStorage.setItem('shopSavingsData_v2', JSON.stringify(parsed.allSavingsData));
+                    if (parsed.allSavingsTarget) localStorage.setItem('shopSavingsTarget_v2', JSON.stringify(parsed.allSavingsTarget));
+                }
+                if (parsed.userProfile) localStorage.setItem('shopUserProfile', JSON.stringify(parsed.userProfile));
+                if (parsed.employeesList) localStorage.setItem('shopEmployeesList', JSON.stringify(parsed.employeesList));
+                if (parsed.ceoCredentials) localStorage.setItem('ceoCredentials', JSON.stringify(parsed.ceoCredentials));
+                alert('✓ ব্যাকআপ সফলভাবে রিস্টোর হয়েছে! অ্যাপ রিফ্রেশ হচ্ছে...');
+                location.reload();
+            } catch (err) { alert('🚨 ত্রুটি: ফাইলটি সঠিক ব্যাকআপ JSON ফাইল নয়!'); }
+        };
+        if (event.target.files[0]) fr.readAsText(event.target.files[0]);
+    }
+
+    /* ========== QR Reset Request (Employee → CEO) ========== */
+    function openQrRequestModal() {
+        document.getElementById('qrRequestEmpId').value = '';
+        document.getElementById('qrRequestModal').style.display = 'flex';
+    }
+    function closeQrRequestModal() {
+        document.getElementById('qrRequestModal').style.display = 'none';
+    }
+    function submitQrRequest() {
+        const empId = document.getElementById('qrRequestEmpId').value.trim().toUpperCase();
+        if (!empId) return showToast('ইউনিক আইডি লিখুন!');
+        const matched = employeesList.find(e => e.id.toUpperCase() === empId);
+        if (!matched) return showModal('আইডি পাওয়া যায়নি!', 'এই EMP আইডি কোনো এমপ্লয়ির সাথে মিলে না। সিইওকে জানান।');
+        if (pendingQrResets.indexOf(matched.id) >= 0) {
+            showToast('এই আইডির রিকোয়েস্ট ইতিমধ্যে পাঠানো আছে। সিইওর অপেক্ষা করুন।');
+            closeQrRequestModal();
+            return;
+        }
+        pendingQrResets.push(matched.id);
+        localStorage.setItem('pendingQrResets', JSON.stringify(pendingQrResets));
+        closeQrRequestModal();
+        showToast('✓ QR রিকোয়েস্ট সিইওর কাছে পাঠানো হয়েছে!');
+    }
+    function openAcceptQrRequest(empId, empName) {
+        pendingAcceptEmpId = empId;
+        document.getElementById('acceptQrRequestBody').innerText =
+            '"' + (empName || empId) + '" (ID: ' + empId + ') নতুন QR রিকোয়েস্ট করেছে। এক্সেপ্ট করলে পুরনো ইউজারনেম/পাসওয়ার্ড মুছে যাবে ও নতুন QR ডাউনলোড করতে পারবেন।';
+        document.getElementById('acceptQrRequestModal').style.display = 'flex';
+    }
+    function acceptQrRequest() {
+        if (!pendingAcceptEmpId) return;
+        const idx = employeesList.findIndex(e => e.id === pendingAcceptEmpId);
+        if (idx >= 0) {
+            employeesList[idx].username = '';
+            employeesList[idx].password = '';
+            localStorage.setItem('shopEmployeesList', JSON.stringify(employeesList));
+        }
+        pendingQrResets = pendingQrResets.filter(id => id !== pendingAcceptEmpId);
+        localStorage.setItem('pendingQrResets', JSON.stringify(pendingQrResets));
+        const empName = (idx >= 0 ? (employeesList[idx].name || employeesList[idx].id) : pendingAcceptEmpId);
+        const empId = pendingAcceptEmpId;
+        document.getElementById('acceptQrRequestModal').style.display = 'none';
+        pendingAcceptEmpId = null;
+        renderEmployeeList();
+        showQrOnly(empId, empName);
+        showToast('✓ রিকোয়েস্ট এক্সেপ্ট! নতুন QR ডাউনলোড করুন ও এমপ্লয়িকে দিন।');
+    }
+    function rejectQrRequest() {
+        if (pendingAcceptEmpId) {
+            pendingQrResets = pendingQrResets.filter(id => id !== pendingAcceptEmpId);
+            localStorage.setItem('pendingQrResets', JSON.stringify(pendingQrResets));
+            renderEmployeeList();
+            showToast('রিকোয়েস্ট বাতিল করা হয়েছে।');
+        }
+        document.getElementById('acceptQrRequestModal').style.display = 'none';
+        pendingAcceptEmpId = null;
+    }
+
+    /* ========== CEO Forgot Password (Security PIN) ========== */
+    // ইউনিক সিকিউরিটি পিন — শুধু আপনি জানবেন (কোডে হার্ডকোড)
+    const CEO_SECURITY_PIN = '28487346';
+
+    function openCeoForgotModal() {
+        document.getElementById('ceoSecurityPin').value = '';
+        document.getElementById('ceoForgotNewUser').value = '';
+        document.getElementById('ceoForgotNewPass').value = '';
+        document.getElementById('ceoForgotNewPassConfirm').value = '';
+        document.getElementById('ceoForgotModal').style.display = 'flex';
+    }
+    function closeCeoForgotModal() {
+        document.getElementById('ceoForgotModal').style.display = 'none';
+    }
+    function resetCeoWithPin() {
+        const pin = document.getElementById('ceoSecurityPin').value.trim();
+        const nu = document.getElementById('ceoForgotNewUser').value.trim();
+        const np = document.getElementById('ceoForgotNewPass').value.trim();
+        const npc = document.getElementById('ceoForgotNewPassConfirm').value.trim();
+        if (!pin) return showToast('ইমেইল পিন লিখুন!');
+        if (pin !== CEO_SECURITY_PIN) return showModal('পিন ভুল!', 'সিকিউরিটি পিন সঠিক নয়। আবার চেষ্টা করুন।');
+        if (!nu || !np) return showToast('নতুন ইউজারনেম ও পাসওয়ার্ড দিন!');
+        if (np !== npc) return showToast('পাসওয়ার্ড দুইবার একই লিখুন!');
+        ceoCredentials.username = nu;
+        ceoCredentials.password = np;
+        localStorage.setItem('ceoCredentials', JSON.stringify(ceoCredentials));
+        closeCeoForgotModal();
+        showToast('✓ সিইও পাসওয়ার্ড সফলভাবে রিসেট হয়েছে! এখন লগইন করুন।');
+    }
+
+    window.onload = function() {
+        checkAuth();
+        renderProfileHeader();
+        updateMonthHeader();
+        loadDateData();
+        updateAutoIdPreview();
+    };
+</script>
 </body>
-  </html>
+    </html>
