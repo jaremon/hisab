@@ -12,8 +12,10 @@
     <meta name="apple-mobile-web-app-title" content="আমার হিসাব">
     <meta name="theme-color" content="#0d9488">
     
-    <link rel="icon" type="image/png" sizes="192x192" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="logo-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="logo-512.png">
+    <link rel="apple-touch-icon" href="logo-512.png">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -933,21 +935,59 @@
     }
 
     function handleScannedCode(code) {
-        const matched = employeesList.find(e => e.id.toLowerCase() === code.toLowerCase());
+        // QR-এ এমপ্লয়ি ডেটা থাকতে পারে (অফলাইন বুটস্ট্র্যাপ) — সিইও পাসওয়ার্ড কখনো থাকে না
+        let empId = code;
+        let payload = null;
+        try {
+            if (code.startsWith('{')) {
+                payload = JSON.parse(code);
+                if (payload && payload.type === 'emp_setup' && payload.id) {
+                    empId = payload.id;
+                    // এই ডিভাইসের লিস্টে এমপ্লয়ি যোগ/আপডেট (পাসওয়ার্ড QR থেকে আসে না)
+                    let idx = employeesList.findIndex(e => e.id.toLowerCase() === empId.toLowerCase());
+                    const base = {
+                        id: empId,
+                        name: payload.name || '',
+                        role: payload.role || '',
+                        salary: payload.salary || 0,
+                        phone: payload.phone || '',
+                        startDate: payload.startDate || payload.joinDate || ''
+                    };
+                    if (idx < 0) {
+                        employeesList.push({ ...base, username: '', password: '' });
+                    } else {
+                        // প্রোফাইল আপডেট, লোকাল ইউজার/পাস আলাদা রাখা
+                        employeesList[idx] = {
+                            ...employeesList[idx],
+                            name: base.name || employeesList[idx].name,
+                            role: base.role || employeesList[idx].role,
+                            salary: base.salary || employeesList[idx].salary,
+                            phone: base.phone || employeesList[idx].phone,
+                            startDate: base.startDate || employeesList[idx].startDate
+                        };
+                        // reset ফ্ল্যাগ থাকলে পাস মুছে নতুন সেট করাতে
+                        if (payload.reset) {
+                            employeesList[idx].username = '';
+                            employeesList[idx].password = '';
+                        }
+                    }
+                    localStorage.setItem('shopEmployeesList', JSON.stringify(employeesList));
+                }
+            }
+        } catch (e) { /* plain EMP-id */ }
+
+        const matched = employeesList.find(e => e.id.toLowerCase() === String(empId).toLowerCase());
         if (!matched) {
-            showModal('কোড পাওয়া যায়নি!', 'এই ইউনিক আইডি কোনো এমপ্লয়ির সাথে মিলে না। সিইওকে জানান।');
+            showModal('কোড পাওয়া যায়নি!', 'এই QR/আইডি দিয়ে এমপ্লয়ি সেটআপ করা যায়নি। সিইওর দেওয়া নতুন QR স্ক্যান করুন।');
             return;
         }
-        if (matched.username && matched.password) {
-            showToast('✓ QR স্ক্যান সফল! এখন ইউজারনেম ও পাসওয়ার্ড দিয়ে লগইন করুন।');
-            document.getElementById('empLoginUser').focus();
-        } else {
-            pendingEmpForCred = matched;
-            document.getElementById('setUsername').value = '';
-            document.getElementById('setPassword').value = '';
-            document.getElementById('setPasswordConfirm').value = '';
-            document.getElementById('setCredModal').style.display = 'flex';
-        }
+        // স্ক্যান করলেই ইউজার/পাস সেট বা রিসেট (এই ডিভাইসে) — সিইও অ্যাকাউন্টে ঢোকা যায় না
+        pendingEmpForCred = matched;
+        document.getElementById('setUsername').value = '';
+        document.getElementById('setPassword').value = '';
+        document.getElementById('setPasswordConfirm').value = '';
+        document.getElementById('setCredModal').style.display = 'flex';
+        showToast('✓ QR সফল! ইউজারনেম ও পাসওয়ার্ড সেট করুন।');
     }
 
     function loginEmployee() {
@@ -1285,19 +1325,34 @@
     }
     function closeEmpDetailModal() { document.getElementById('empDetailModal').style.display = 'none'; currentViewingEmp = null; }
 
-    function showQrOnly(empId, empName) {
-        currentQrEmp = { id: empId, name: empName || empId };
-        document.getElementById('qrOnlyTitle').innerText = empName || 'এমপ্লয়ি';
-        document.getElementById('qrOnlyId').innerText = 'ID: ' + empId;
+    function buildEmpQrPayload(emp, reset) {
+        // শুধু এমপ্লয়ি তথ্য — ইউজারনেম/পাসওয়ার্ড/সিইও ক্রেডেনশিয়াল কখনো QR-এ যায় না
+        return JSON.stringify({
+            type: 'emp_setup',
+            id: emp.id,
+            name: emp.name || '',
+            role: emp.role || '',
+            salary: emp.salary || 0,
+            phone: emp.phone || '',
+            startDate: emp.startDate || '',
+            reset: !!reset
+        });
+    }
+    function showQrOnly(empId, empName, asReset) {
+        const emp = employeesList.find(e => e.id === empId) || { id: empId, name: empName || empId };
+        currentQrEmp = { id: emp.id, name: emp.name || empName || emp.id };
+        document.getElementById('qrOnlyTitle').innerText = currentQrEmp.name || 'এমপ্লয়ি';
+        document.getElementById('qrOnlyId').innerText = 'ID: ' + currentQrEmp.id;
         const container = document.getElementById('qrOnlyContainer');
         container.innerHTML = '';
+        const payload = buildEmpQrPayload(emp, asReset);
         new QRCode(container, {
-            text: empId,
+            text: payload,
             width: 160,
             height: 160,
             colorDark: "#0f172a",
             colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
+            correctLevel: QRCode.CorrectLevel.M
         });
         document.getElementById('qrOnlyModal').style.display = 'flex';
     }
@@ -1889,7 +1944,7 @@
         document.getElementById('acceptQrRequestModal').style.display = 'none';
         pendingAcceptEmpId = null;
         renderEmployeeList();
-        showQrOnly(empId, empName);
+        showQrOnly(empId, empName, true);
         showToast('✓ রিকোয়েস্ট এক্সেপ্ট! নতুন QR ডাউনলোড করুন ও এমপ্লয়িকে দিন।');
     }
     function rejectQrRequest() {
