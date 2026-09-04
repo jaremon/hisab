@@ -498,9 +498,19 @@
             <div class="stat-card"><div class="stat-label">মোট দৈনিক</div><div class="stat-val" id="totalDaily">৳ ০</div></div>
             <div class="stat-card"><div class="stat-label">মোট নগদ</div><div class="stat-val" id="totalCash">৳ ০</div></div>
         </div>
-        <div class="stats-grid-2" style="margin-bottom: 12px;">
+        <div class="stats-grid-2" style="margin-bottom: 8px;">
             <div class="stat-card horizontal-card total-grand"><div class="stat-label">সর্বমোট পাওনা:</div><div class="stat-val" id="grandTotal">৳ ০</div></div>
             <div class="stat-card horizontal-card total-net"><div class="stat-label">হাতে নিট জমা (Net):</div><div class="stat-val" id="netCashInHand">৳ ০</div></div>
+        </div>
+        <div class="stats-grid-2" style="margin-bottom: 12px;">
+            <div class="stat-card horizontal-card" style="background:#f0fdf4; border-color:#bbf7d0;">
+                <div class="stat-label" style="color:#166534;">নির্ধারিত বেতন:</div>
+                <div class="stat-val" id="fixedSalaryDisplay" style="color:#047857;">৳ ০</div>
+            </div>
+            <div class="stat-card horizontal-card" style="background:#eff6ff; border-color:#bfdbfe;">
+                <div class="stat-label" style="color:#1e40af;">এই মাসে বাকি পাবে:</div>
+                <div class="stat-val" id="remainingPayDisplay" style="color:#1d4ed8;">৳ ০</div>
+            </div>
         </div>
 
         <div class="date-section">
@@ -1372,7 +1382,10 @@
                 if (item.status === 'PRESENT') present++;
                 if (item.status === 'ABSENT') absent++;
                 if (item.status === 'HOLIDAY') holiday++;
-                totalDaily += (item.daily || 0);
+                // শুধু উপস্থিত দিনের দৈনিক মজুরি যোগ
+                if (item.status === 'PRESENT') {
+                    totalDaily += (item.daily || 0);
+                }
                 totalCash += (item.cash || 0);
             }
         });
@@ -1619,17 +1632,55 @@
 
     function saveData() {
         if (!selectedDateStr) return showToast('তারিখ নির্বাচন করুন!');
-        const daily = parseFloat(document.getElementById('dailyInput').value) || 0;
+
+        // জয়েনিং ডেটের আগে হিসাব সেভ করা যাবে না (টাইম লিমিট)
+        const empRec = employeesList.find(e => e.id === userProfile.id) || {};
+        const joinDate = empRec.startDate || userProfile.startDate || '';
+        if (joinDate && selectedDateStr < joinDate) {
+            showModal('তারিখ সীমা!', 'জয়েনিং ডেট (' + formatBanglaFullDate(joinDate) + ') এর আগের তারিখে হিসাব সেভ করা যাবে না।');
+            return;
+        }
+
+        let daily = parseFloat(document.getElementById('dailyInput').value) || 0;
         const cash = parseFloat(document.getElementById('cashInput').value) || 0;
         const note = document.getElementById('noteInput').value.trim();
 
+        // উপস্থিত না হলে দৈনিক মজুরি ০ ধরা হয় (শুধু ডিউটি দিনে যোগ হবে)
+        if (currentStatus !== 'PRESENT') {
+            daily = 0;
+        }
+
         const storeData = getStoreData();
+        // অস্থায়ী হিসাব করে দেখি সীমা ছাড়াবে কিনা
+        const ym = getCurrentYearMonth();
+        let tempDaily = 0, tempCash = 0;
+        Object.keys(storeData).forEach(date => {
+            if (date.startsWith(ym) && date !== selectedDateStr) {
+                const item = storeData[date];
+                if (item.status === 'PRESENT') tempDaily += (item.daily || 0);
+                tempCash += (item.cash || 0);
+            }
+        });
+        if (currentStatus === 'PRESENT') tempDaily += daily;
+        tempCash += cash;
+        const tempGrand = tempDaily + tempCash;
+        const salaryLimit = empRec.salary || 0;
+
         storeData[selectedDateStr] = { status: currentStatus, daily: daily, cash: cash, note: note };
         allStoreData[getCurrentUserId()] = storeData;
         localStorage.setItem('shopTrackerData_v2', JSON.stringify(allStoreData));
 
         showToast('✓ হিসাব সফলভাবে সেভ হয়েছে!');
         updateDashboard();
+
+        // সেভের পরেই সীমা অতিক্রম করলে একবার অ্যালার্ট
+        if (salaryLimit > 0 && tempGrand > salaryLimit) {
+            showModal('বেতন সীমা অতিক্রম করেছে!', 
+                'আপনার মোট পাওনা ৳' + toBanglaNum(tempGrand) + 
+                '। নির্ধারিত বেতন ৳' + toBanglaNum(salaryLimit) + 
+                '। বাকি পাওনা: -৳' + toBanglaNum(tempGrand - salaryLimit) + 
+                '\n\nশুধু উপস্থিত (ডিউটি) দিনের দৈনিক মজুরি যোগ হয়।');
+        }
     }
 
     function loadDateData() {
@@ -1707,7 +1758,10 @@
                 if (item.status === 'PRESENT') present++;
                 if (item.status === 'ABSENT') absent++;
                 if (item.status === 'HOLIDAY') holiday++;
-                totalDaily += (item.daily || 0);
+                // শুধু উপস্থিত দিনের দৈনিক মজুরি যোগ হবে; অনুপস্থিত/ছুটিতে দৈনিক ০ ধরা হয়
+                if (item.status === 'PRESENT') {
+                    totalDaily += (item.daily || 0);
+                }
                 totalCash += (item.cash || 0);
             }
         });
@@ -1734,9 +1788,46 @@
         document.getElementById('grandTotal').innerText = '৳ ' + toBanglaNum(grandTotal);
         document.getElementById('netCashInHand').innerText = '৳ ' + toBanglaNum(netCash);
 
-        const salaryLimit = (employeesList.find(e => e.id === userProfile.id) || {}).salary || 15000;
-        if (grandTotal > salaryLimit) {
-            showModal('বেতন সীমা অতিক্রম করেছে!', 'আপনার মোট পাওনা ৳' + toBanglaNum(grandTotal) + ', যা নির্ধারিত ৳' + toBanglaNum(salaryLimit) + ' টাকার সীমা ছাড়িয়ে গেছে।');
+        // নির্ধারিত বেতন ও বাকি পাওনা (এমপ্লয়ি + সিইও উভয়ের জন্য)
+        const empRec = employeesList.find(e => e.id === userProfile.id) || {};
+        const salaryLimit = empRec.salary || (currentUserRole === 'CEO' ? 0 : 15000);
+        const remaining = salaryLimit - grandTotal;
+
+        const fixedEl = document.getElementById('fixedSalaryDisplay');
+        const remEl = document.getElementById('remainingPayDisplay');
+        if (fixedEl) fixedEl.innerText = '৳ ' + toBanglaNum(salaryLimit);
+        if (remEl) {
+            if (salaryLimit <= 0) {
+                remEl.innerText = '—';
+                remEl.style.color = '#64748b';
+            } else if (remaining >= 0) {
+                remEl.innerText = '৳ ' + toBanglaNum(remaining);
+                remEl.style.color = '#1d4ed8';
+            } else {
+                remEl.innerText = '-৳ ' + toBanglaNum(Math.abs(remaining));
+                remEl.style.color = '#dc2626';
+            }
+        }
+
+        // সীমা তথ্য বক্স আপডেট (মডাল নয় — শুধু ভিজুয়াল ওয়ার্নিং)
+        const limitBox = document.getElementById('limitInfoBox');
+        if (limitBox) {
+            if (salaryLimit > 0 && grandTotal > salaryLimit) {
+                limitBox.style.background = '#fef2f2';
+                limitBox.style.borderColor = '#fecaca';
+                limitBox.style.color = '#991b1b';
+                limitBox.innerHTML = '🚨 বেতন সীমা অতিক্রম! মোট পাওনা ৳' + toBanglaNum(grandTotal) + ' / নির্ধারিত ৳' + toBanglaNum(salaryLimit);
+            } else if (salaryLimit > 0) {
+                limitBox.style.background = '#f0fdf4';
+                limitBox.style.borderColor = '#bbf7d0';
+                limitBox.style.color = '#166534';
+                limitBox.innerHTML = '⚠️ সর্বোচ্চ বেতন বাজেটসীমা: ৳ ' + toBanglaNum(salaryLimit) + ' | বাকি: ৳ ' + toBanglaNum(Math.max(0, remaining));
+            } else {
+                limitBox.style.background = '#f0fdf4';
+                limitBox.style.borderColor = '#bbf7d0';
+                limitBox.style.color = '#166534';
+                limitBox.innerHTML = '⚠️ বেতন সীমা সেট করা নেই';
+            }
         }
         renderHistory();
     }
@@ -1970,7 +2061,8 @@
             if (item.status === 'PRESENT') present++;
             if (item.status === 'ABSENT') absent++;
             if (item.status === 'HOLIDAY') holiday++;
-            const d = item.daily || 0, c = item.cash || 0;
+            const d = (item.status === 'PRESENT' ? (item.daily || 0) : 0);
+            const c = item.cash || 0;
             totalDaily += d; totalCash += c;
             let st = 'নেই';
             if (item.status === 'PRESENT') st = 'উপস্থিত';
@@ -2008,7 +2100,8 @@
             if (item.status === 'PRESENT') present++;
             if (item.status === 'ABSENT') absent++;
             if (item.status === 'HOLIDAY') holiday++;
-            const d = item.daily || 0, c = item.cash || 0;
+            const d = (item.status === 'PRESENT' ? (item.daily || 0) : 0);
+            const c = item.cash || 0;
             totalDaily += d; totalCash += c;
             let st = 'নেই';
             if (item.status === 'PRESENT') st = 'উপস্থিত';
